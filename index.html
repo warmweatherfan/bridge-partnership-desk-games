@@ -2132,6 +2132,115 @@ function adminSaveTableCount(btn){
   }).catch(function(e){alert('Error: '+e.message);});
 }
 
+function renderClubManager(){
+  var myClubs=me.manages||[];
+  var h='<div class="page"><div class="page-title">&#127968; Club Manager</div>';
+  h+='<div class="page-sub">Manage your club games</div>';
+
+  if(myClubs.length===0){
+    h+='<div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">You are not assigned to manage any clubs.</div>';
+    h+='</div>';
+    setHTML("content",h);
+    return;
+  }
+
+  // Club selector if managing multiple clubs
+  var selectedClub=window._cmClub||myClubs[0];
+  window._cmClub=selectedClub;
+
+  if(myClubs.length>1){
+    h+='<div style="margin-bottom:16px">';
+    h+='<label class="flabel">Select Club</label>';
+    h+='<select class="admin-input" onchange="window._cmClub=this.value;renderClubManager()" style="margin-bottom:0;font-size:13px">';
+    myClubs.forEach(function(c){
+      h+='<option value="'+c+'"'+(selectedClub===c?' selected':'')+'>'+c+'</option>';
+    });
+    h+='</select>';
+    h+='</div>';
+  }
+
+  // Game Setup for selected club
+  h+='<div class="admin-section">';
+  h+='<h3>Game Setup — '+selectedClub+'</h3>';
+  h+='<div style="font-size:13px;color:var(--tm);margin-bottom:12px">Set the number of tables for upcoming sessions to open registration.</div>';
+  h+='<div id="cm-sessions">Loading...</div>';
+  h+='</div>';
+  h+='</div>';
+  setHTML("content",h);
+
+  // Load sessions
+  loadGameSetupForEl('cm-sessions', selectedClub);
+}
+
+function loadGameSetupForEl(elId, club){
+  var today=new Date();today.setHours(0,0,0,0);
+  var sched=CLUB_SCHEDULES[club]||{};
+  var sessions=[];
+
+  for(var d=0;d<28;d++){
+    var dt=new Date(today);
+    dt.setDate(today.getDate()+d);
+    var dow=dt.getDay();
+    var daySessions=sched[dow]||[];
+    if(daySessions.length>0){
+      var mm=dt.getMonth()+1;
+      var dd=dt.getDate();
+      var dateStr=dt.getFullYear()+'-'+(mm<10?'0'+mm:mm)+'-'+(dd<10?'0'+dd:dd);
+      daySessions.forEach(function(sess){
+        sessions.push({date:dateStr,session:sess});
+      });
+    }
+  }
+
+  var el=document.getElementById(elId);
+  if(!el)return;
+
+  if(sessions.length===0){
+    el.innerHTML='<div style="color:var(--tl);font-style:italic">No upcoming sessions found.</div>';
+    return;
+  }
+
+  var h='<table style="width:100%;border-collapse:collapse;font-size:13px">';
+  h+='<tr style="border-bottom:1px solid var(--cream-dark)">';
+  h+='<th style="text-align:left;padding:6px 4px;color:var(--td)">Date</th>';
+  h+='<th style="text-align:left;padding:6px 4px;color:var(--td)">Session</th>';
+  h+='<th style="text-align:center;padding:6px 4px;color:var(--td)">Tables</th>';
+  h+='<th style="padding:6px 4px"></th>';
+  h+='</tr>';
+
+  sessions.forEach(function(s){
+    var sKey=safeKey(s.session);
+    var snClub=safeName(club);
+    var inputId='cm_'+snClub+'_'+s.date+'_'+sKey;
+    var savedId='cms_'+snClub+'_'+s.date+'_'+sKey;
+
+    h+='<tr style="border-bottom:1px solid var(--cream-dark)">';
+    h+='<td style="padding:8px 4px;color:var(--td)">'+formatDateLong(s.date)+'</td>';
+    h+='<td style="padding:8px 4px;color:var(--tm)">'+s.session+'</td>';
+    h+='<td style="padding:8px 4px;text-align:center">';
+    h+='<input type="number" min="0" max="30" class="admin-input" id="'+inputId+'" style="width:60px;text-align:center;font-size:13px;padding:4px" value="0"/>';
+    h+='</td>';
+    h+='<td style="padding:8px 4px">';
+    h+='<button class="btn btn-gold" style="margin-top:0;padding:4px 10px;font-size:12px" ';
+    h+='data-club="'+club+'" data-date="'+s.date+'" data-sk="'+sKey+'" data-iid="'+inputId+'" data-sid="'+savedId+'" ';
+    h+='onclick="adminSaveTableCount(this)">Save</button>';
+    h+='<span id="'+savedId+'" style="font-size:11px;color:var(--green);margin-left:6px;display:none">Saved!</span>';
+    h+='</td>';
+    h+='</tr>';
+
+    // Load existing table count
+    (function(club2,date,sk,iid){
+      dbRef('registrations/'+safeName(club2)+'/'+date+'/'+sk+'/tables').once('value').then(function(snap){
+        var inp=document.getElementById(iid);
+        if(inp&&snap.exists())inp.value=snap.val();
+      });
+    })(club,s.date,sKey,inputId);
+  });
+
+  h+='</table>';
+  el.innerHTML=h;
+}
+
 function renderGames(){
   var selectedClub=window._gamesClub||'';
   var h='<div class="page"><div class="page-title">&#127183; Games</div>';
@@ -3066,7 +3175,8 @@ function renderAdmin(){
     h+='<div class="admin-row"><span>'+p.displayName+' <span style="font-size:12px;color:var(--tl)">&middot; '+p.skill+(p.masterpoints?' &middot; &#11088;'+p.masterpoints:'')+(p.admin?' &middot; ADMIN':'')+'</span></span>';
     h+='<div style="display:flex;gap:6px">';
     if(!p.admin||p.admin==="false")h+='<button class="btn btn-gold" style="margin-top:0;padding:4px 10px;font-size:12px" onclick="adminMakeAdmin(\''+p.uid+'\')">Make Admin</button>';
-    if(p.uid!==me.uid)h+='<button class="btn btn-red" style="margin-top:0;padding:4px 10px;font-size:12px" onclick="adminDeleteUser(\''+p.uid+'\')">Delete</button>';
+    h+='<button class="btn" style="margin-top:0;padding:4px 10px;font-size:12px" data-uid="'+p.uid+'" data-name="'+p.displayName+'" onclick="adminManageClubsEl(this)">Manage Clubs</button> ';
+    if(p.uid!==me.uid)h+='<button class="btn btn-red" style="margin-top:0;padding:4px 10px;font-size:12px" onclick="adminDeleteUser(\''+p.uid+'\')"  >Delete</button>';
     h+='</div></div>';
   });
   h+='</div></div>';
@@ -3463,6 +3573,23 @@ function adminDeleteTournSession(tE,ds,si){
   if(!confirm("Delete session?"))return;
   TOURNAMENTS[t][ds].splice(si,1);
   saveTournToDb(t).then(function(){return loadVenueData();}).then(function(){renderAdmin();});
+}
+
+function adminManageClubsEl(btn){adminManageClubs(btn.getAttribute('data-uid'),btn.getAttribute('data-name'));}
+function adminManageClubs(uid,name){
+  var p=players.find(function(x){return x.uid===uid;});
+  var current=(p&&p.manages&&p.manages.length)?p.manages.join(', '):'none';
+  var input=prompt('Enter clubs for '+name+' to manage (comma separated):\nCurrent: '+current+'\n\nAvailable: '+CLUBS.join(', '));
+  if(input===null)return;
+  var clubs=input.split(',').map(function(s){return s.trim();}).filter(function(s){
+    return s&&CLUBS.indexOf(s)>=0;
+  });
+  dbRef('players/'+uid+'/manages').set(clubs.length?clubs:null).then(function(){
+    return loadPlayers();
+  }).then(function(){
+    renderAdmin();
+    showToast('Club assignments updated for '+name);
+  }).catch(function(e){alert('Error: '+e.message);});
 }
 
 function adminMakeAdmin(uid){if(!confirm("Make this user an admin?"))return;dbRef("players/"+uid+"/admin").set(true).then(function(){return loadPlayers();}).then(function(){renderAdmin();});}
