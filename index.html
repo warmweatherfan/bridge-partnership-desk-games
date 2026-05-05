@@ -2208,12 +2208,22 @@ function renderGames(){
           var pairs=snap.exists()&&snap.val().pairs?Object.keys(snap.val().pairs).length:0;
           var waitlist=snap.exists()&&snap.val().waitlist?Object.keys(snap.val().waitlist).length:0;
           if(tables===0){
-            el.innerHTML='<span style="color:var(--tl)">Registration coming soon</span>';
+            // No table limit set - hide registration entirely
+            el.style.display='none';
+            var btn=el.parentNode.querySelector('button');
+            if(btn)btn.style.display='none';
           } else {
-            var avail=tables-pairs;
-            var color=avail>2?'var(--green)':avail>0?'#f57f17':'#c0392b';
-            el.innerHTML='<span style="color:'+color+'">'+avail+' of '+(tables*2)+' spots open</span>';
-            if(waitlist>0)el.innerHTML+='<br><span style="font-size:11px;color:var(--tl)">'+waitlist+' on waitlist</span>';
+            var maxPairs=tables*2;
+            var avail=maxPairs-pairs;
+            var statusHtml='';
+            if(avail<=0){
+              statusHtml='<span style="color:#c0392b;font-weight:700">Game is full</span>';
+              if(waitlist>0)statusHtml+='<br><span style="font-size:11px;color:var(--tl)">'+waitlist+' on waitlist</span>';
+            } else {
+              var color=avail>4?'var(--green)':avail>2?'#f57f17':'#e67e22';
+              statusHtml='<span style="color:'+color+'">Open seats available for '+avail+' pair'+(avail===1?'':'s')+'</span>';
+            }
+            el.innerHTML=statusHtml;
           }
         }).catch(function(){
           var el=document.getElementById(id);
