@@ -2300,11 +2300,11 @@ function showRegistrationForm(btn){
     h+='<label class="flabel">Select Your Partner</label>';
     h+='<div style="font-size:12px;color:var(--tl);margin-bottom:8px">Both players must be registered in the app.</div>';
     h+='<input class="finput" id="reg-partner-search" type="text" placeholder="Type partner name..." oninput="filterRegPartners(this.value)" style="margin-bottom:8px"/>';
-    h+='<div id="reg-partner-list" style="max-height:180px;overflow-y:auto;border:1px solid var(--cream-dark);border-radius:6px">';
+    h+='<div id="reg-partner-list" style="max-height:180px;overflow-y:auto;border:1px solid #d0c8b8;border-radius:6px;background:#fefcf8">';
     players.filter(function(p){return p.uid!==me.uid;}).forEach(function(p){
       h+='<div class="reg-partner-item" data-uid="'+p.uid+'" data-name="'+p.displayName+'" onclick="selectRegPartner(this)" ';
-      h+='style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--cream-dark);color:var(--td);background:var(--card)">';
-      h+=p.displayName+(p.skill?' — '+p.skill:'')+(p.masterpoints?' — '+p.masterpoints+' MPs':'');
+      h+='<div class="reg-partner-item" data-uid="'+p.uid+'" data-name="'+p.displayName+'" onclick="selectRegPartner(this)" ';
+      h+='style="padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #e8e0d0;color:#2a2a2a;background:#fefcf8">'; 
       h+='</div>';
     });
     h+='</div>';
@@ -2382,7 +2382,7 @@ function filterRegPartners(val){
 }
 
 function selectRegPartner(el){
-  document.querySelectorAll('.reg-partner-item').forEach(function(i){i.style.background='';});
+  document.querySelectorAll('.reg-partner-item').forEach(function(i){i.style.background='#fefcf8';i.style.color='#2a2a2a';});
   el.style.background='rgba(201,168,76,0.15)';
   window._regPartnerUid=el.getAttribute('data-uid');
   window._regPartnerName=el.getAttribute('data-name');
@@ -2419,7 +2419,10 @@ function selectSeat(el){
   });
 
   var sel=document.getElementById('reg-seat-selected');
-  if(sel){sel.style.display='block';sel.innerHTML='&#10003; Table '+table+' — <strong>'+seat+'/'+pair[seat]+'</strong> direction';}
+  var txt=document.getElementById('reg-seat-text');
+  if(sel)sel.style.display='block';
+  if(txt)txt.innerHTML='&#10003; Table '+table+' — <strong>'+seat+'/'+pair[seat]+'</strong> direction';
+  updateRegSummary();
   checkRegReady();
 }
 
@@ -2429,7 +2432,7 @@ function confirmRegEl(btn){
 
 function clearRegPartner(){
   window._regPartnerUid=null;window._regPartnerName=null;
-  document.querySelectorAll('.reg-partner-item').forEach(function(i){i.style.background='var(--card)';});
+  document.querySelectorAll('.reg-partner-item').forEach(function(i){i.style.background='#fefcf8';i.style.color='#2a2a2a';});
   var sel=document.getElementById('reg-partner-selected');
   if(sel)sel.style.display='none';
   updateRegSummary();checkRegReady();
