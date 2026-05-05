@@ -2313,7 +2313,11 @@ function showRegistrationForm(btn){
       h+='<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#7a5a00;line-height:1.6">';
       h+='If you cannot attend, please cancel so another pair can take your spot.';
       h+='</div>';
-      h+='<button class="btn btn-red" data-club="'+club+'" data-date="'+date+'" data-sk="'+sk+'" data-pairid="'+myPairId+'" onclick="cancelRegistration(this)" style="margin-right:8px">Cancel Registration</button>';
+      var myPartnerUid=myReg.player1uid===me.uid?myReg.player2uid:myReg.player1uid;
+      var myPartnerName=myReg.player1uid===me.uid?myReg.player2name:myReg.player1name;
+      var myPartner=players.find(function(p){return p.uid===myPartnerUid;});
+      var myPartnerEmail=myPartner&&myPartner.contactEmail?myPartner.contactEmail:'';
+      h+='<button class="btn btn-red" data-club="'+club+'" data-date="'+date+'" data-sk="'+sk+'" data-pairid="'+myPairId+'" data-partneruid="'+myPartnerUid+'" data-partnername="'+myPartnerName+'" data-partneremail="'+myPartnerEmail+'" onclick="cancelRegistration(this)" style="margin-right:8px">Cancel Registration</button>';
       h+='<button class="btn" onclick="renderGames()">Back</button>';
       h+='</div>';
       setHTML('content',h);
@@ -2397,7 +2401,7 @@ function showRegistrationForm(btn){
 
     // Confirm button
     h+='<div id="reg-summary" style="display:none;background:rgba(10,24,18,0.7);border:1px solid rgba(201,168,76,0.3);border-radius:8px;padding:14px;margin-bottom:16px;font-size:13px"><div style="font-weight:700;color:var(--gold-dim);margin-bottom:8px">Registration Summary</div><div id="reg-summary-content" style="color:var(--tm);line-height:1.8"></div></div>';
-    h+='<button class="btn btn-gold" id="reg-confirm-btn" data-club="'+club+'" data-date="'+date+'" data-sk="'+sk+'" onclick="confirmRegEl(this)" disabled>Confirm Registration</button>';
+    h+='<button class="btn btn-gold" id="reg-confirm-btn" data-club="'+club+'" data-date="'+date+'" data-sk="'+sk+'" onclick="confirmRegEl(this)">Confirm Registration</button>';
     h+='<button class="btn" style="margin-left:8px" onclick="renderGames()">Cancel</button>';
     h+='</div>';
 
@@ -2468,32 +2472,29 @@ function cancelRegistration(btn){
   var sk=btn.getAttribute('data-sk');
   var pairId=btn.getAttribute('data-pairid');
 
-  // Get partner info before deleting
-  dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs/'+pairId).once('value').then(function(snap){
-    var pair=snap.exists()?snap.val():{};
-    var partnerUid=pair.player1uid===me.uid?pair.player2uid:pair.player1uid;
-    var partnerName=pair.player1uid===me.uid?pair.player2name:pair.player1name;
+  // Read pair data synchronously from already-loaded registration data
+  // We need partner info NOW before any async calls so email opens immediately
+  var partnerUid=btn.getAttribute('data-partneruid');
+  var partnerName=btn.getAttribute('data-partnername');
+  var partnerEmail=btn.getAttribute('data-partneremail');
 
-    // Delete the registration
-    return dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs/'+pairId).remove().then(function(){
-      // Notify partner via in-app message
-      var msgText=me.displayName+' has cancelled your registration for the game at '+club+
-        ' on '+formatDateLong(date)+' ('+sk.replace(/_/g,' ')+').'+
-        ' You no longer have a reserved spot for this game.';
-      if(partnerUid)sendMessage(partnerUid,msgText,null);
+  var msgText=me.displayName+' has cancelled your registration for the game at '+club+
+    ' on '+formatDateLong(date)+' ('+sk.replace(/_/g,' ')+').'+
+    ' You no longer have a reserved spot for this game.';
 
-      // Send email if partner has one
-      var partner=players.find(function(p){return p.uid===partnerUid;});
-      if(partner&&partner.contactEmail){
-        var mailLink='mailto:'+partner.contactEmail+
-          '?subject=Bridge Game Registration Cancelled — '+club+' '+formatDateLong(date)+
-          '&body='+encodeURIComponent(msgText);
-        window.open(mailLink);
-      }
+  // Open email immediately while still in user gesture context
+  if(partnerEmail){
+    var mailLink='mailto:'+partnerEmail+
+      '?subject=Bridge Game Registration Cancelled — '+club+' '+formatDateLong(date)+
+      '&body='+encodeURIComponent(msgText);
+    window.open(mailLink);
+  }
 
-      showToast('Registration cancelled. Your partner has been notified.');
-      renderGames();
-    });
+  // Now do async Firebase operations
+  dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs/'+pairId).remove().then(function(){
+    if(partnerUid)sendMessage(partnerUid,msgText,null);
+    showToast('Registration cancelled. Your partner has been notified.');
+    renderGames();
   }).catch(function(e){alert('Error: '+e.message);});
 }
 
