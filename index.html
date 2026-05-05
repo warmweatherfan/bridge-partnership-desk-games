@@ -1020,7 +1020,7 @@ function setTab(t){
   doSetTab(t);
 }
 function doSetTab(t){
-  _profileDirty=false;window._cmDirty=false;
+  _profileDirty=false;
   if(t==="browse"){browseFilters={skills:[],venue:"",date:"",session:"",role:"",system:"",anySkill:false};browseCalY=0;browseCalM=0;renderBrowse();}
   if(t==="messages")renderMessages();
   if(t==="profile"){_profileDirty=false;renderProfile();}
@@ -2170,7 +2170,7 @@ function renderClubManager(){
   var selectedClub=window._cmClub||myClubs[0];
   window._cmClub=selectedClub;
   window._cmDirty=false;
-  window._cmTableData={};
+  window._cmTableData=window._cmTableData||{};
 
   if(myClubs.length>1){
     h+='<div style="margin-bottom:16px">';
