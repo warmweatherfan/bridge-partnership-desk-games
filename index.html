@@ -2169,8 +2169,8 @@ function renderClubManager(){
   // Club selector if managing multiple clubs
   var selectedClub=window._cmClub||myClubs[0];
   window._cmClub=selectedClub;
-  window._cmDirty=false;
-  window._cmTableData=window._cmTableData||{};
+  // Do NOT reset _cmDirty here - it must persist across renders
+  window._cmTableData={};
 
   if(myClubs.length>1){
     h+='<div style="margin-bottom:16px">';
