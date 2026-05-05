@@ -2279,10 +2279,46 @@ function showRegistrationForm(btn){
   var sk=btn.getAttribute('data-sk');
   var tables=parseInt(btn.getAttribute('data-tables'))||0;
 
+  // Reset state
+  window._regTable=null;window._regSeat=null;window._regSeatPair=null;
+  window._regPartnerUid=null;window._regPartnerName=null;
+
   // Load current registrations to show available seats
   dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk).once('value').then(function(snap){
     var regData=snap.exists()?snap.val():{};
     var pairs=regData.pairs||{};
+
+    // Check if current player is already registered
+    var myReg=null;
+    var myPairId=null;
+    Object.entries(pairs).forEach(function(e){
+      var pid=e[0],pair=e[1];
+      if(pair.player1uid===me.uid||pair.player2uid===me.uid){
+        myReg=pair;myPairId=pid;
+      }
+    });
+
+    // If already registered show current registration with cancel option
+    if(myReg){
+      var h='<div class="page"><div class="page-title">Your Registration</div>';
+      h+='<div style="font-size:13px;color:var(--tm);margin-bottom:4px">'+club+'</div>';
+      h+='<div style="font-size:13px;color:var(--tm);margin-bottom:16px">'+formatDateLong(date)+'</div>';
+      h+='<div class="form-box" style="margin-bottom:16px">';
+      h+='<div style="font-size:14px;font-weight:700;color:var(--td);margin-bottom:12px">&#10003; You are registered!</div>';
+      h+='<div style="font-size:13px;color:var(--tm);line-height:1.8">';
+      h+='<div>&#9824; <strong>'+(myReg.player1uid===me.uid?myReg.player1name:myReg.player2name)+'</strong> (you) — '+(myReg.player1uid===me.uid?myReg.player1seat:myReg.player2seat)+' seat</div>';
+      h+='<div>&#9824; <strong>'+(myReg.player1uid===me.uid?myReg.player2name:myReg.player1name)+'</strong> (partner) — '+(myReg.player1uid===me.uid?myReg.player2seat:myReg.player1seat)+' seat</div>';
+      h+='<div>&#127968; Table '+myReg.table+' &nbsp;|&nbsp; Direction: <strong>'+myReg.direction+'</strong></div>';
+      h+='</div></div>';
+      h+='<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#7a5a00;line-height:1.6">';
+      h+='If you cannot attend, please cancel so another pair can take your spot.';
+      h+='</div>';
+      h+='<button class="btn btn-red" data-club="'+club+'" data-date="'+date+'" data-sk="'+sk+'" data-pairid="'+myPairId+'" onclick="cancelRegistration(this)" style="margin-right:8px">Cancel Registration</button>';
+      h+='<button class="btn" onclick="renderGames()">Back</button>';
+      h+='</div>';
+      setHTML('content',h);
+      return;
+    }
 
     // Build taken seats map
     var takenSeats={};
@@ -2423,6 +2459,18 @@ function selectSeat(el){
   if(txt)txt.innerHTML='&#10003; Table '+table+' — <strong>'+seat+'/'+pair[seat]+'</strong> direction';
   updateRegSummary();
   checkRegReady();
+}
+
+function cancelRegistration(btn){
+  if(!confirm('Are you sure you want to cancel your registration?'))return;
+  var club=btn.getAttribute('data-club');
+  var date=btn.getAttribute('data-date');
+  var sk=btn.getAttribute('data-sk');
+  var pairId=btn.getAttribute('data-pairid');
+  dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs/'+pairId).remove().then(function(){
+    showToast('Registration cancelled.');
+    renderGames();
+  }).catch(function(e){alert('Error: '+e.message);});
 }
 
 function confirmRegEl(btn){
