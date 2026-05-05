@@ -2719,15 +2719,15 @@ function confirmRegistration(club,date,sk){
       ' ('+sk.replace(/_/g,' ')+') by '+me.displayName+
       '. You will be sitting '+pairData.direction+' at Table '+pairData.table+
       '. Please confirm you can attend or cancel if you cannot make it.';
-    sendMessage(window._regPartnerUid,msgText,null);
-
-    // Also send email if partner has one
+    // Email if partner has one, otherwise in-app message
     var partner=players.find(function(p){return p.uid===window._regPartnerUid;});
     if(partner&&partner.contactEmail){
       var mailLink='mailto:'+partner.contactEmail+
         '?subject=Bridge Game Registration — '+club+' '+formatDateLong(date)+
         '&body='+encodeURIComponent(msgText);
       window.open(mailLink);
+    } else {
+      sendMessage(window._regPartnerUid,msgText,null);
     }
 
     showToast('Registration confirmed! Your partner has been notified.');
@@ -3578,13 +3578,39 @@ function adminDeleteTournSession(tE,ds,si){
 function adminManageClubsEl(btn){adminManageClubs(btn.getAttribute('data-uid'),btn.getAttribute('data-name'));}
 function adminManageClubs(uid,name){
   var p=players.find(function(x){return x.uid===uid;});
-  var current=(p&&p.manages&&p.manages.length)?p.manages.join(', '):'none';
-  var input=prompt('Enter clubs for '+name+' to manage (comma separated):\nCurrent: '+current+'\n\nAvailable: '+CLUBS.join(', '));
-  if(input===null)return;
-  var clubs=input.split(',').map(function(s){return s.trim();}).filter(function(s){
-    return s&&CLUBS.indexOf(s)>=0;
+  var current=p&&p.manages?p.manages:[];
+  var h='<div style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center">';
+  h+='<div style="background:var(--card);border-radius:12px;padding:24px;max-width:340px;width:90%">';
+  h+='<div style="font-size:16px;font-weight:700;color:var(--td);margin-bottom:4px">Manage Clubs</div>';
+  h+='<div style="font-size:13px;color:var(--tm);margin-bottom:16px">'+name+'</div>';
+  CLUBS.forEach(function(club){
+    var checked=current.indexOf(club)>=0?'checked':'';
+    h+='<label style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--td);padding:8px 0;border-bottom:1px solid var(--cream-dark);cursor:pointer">';
+    h+='<input type="checkbox" id="mc_'+safeName(club)+'" value="'+club+'" '+checked+' style="width:18px;height:18px"/>';
+    h+=club;
+    h+='</label>';
+  });
+  h+='<div style="display:flex;gap:8px;margin-top:16px">';
+  h+='<button class="btn btn-gold" style="margin-top:0;flex:1" data-uid="'+uid+'" data-name="'+name+'" onclick="saveManageClubsEl(this)">Save</button>';
+  h+='<button class="btn" style="margin-top:0" onclick="closeManageClubs()">Cancel</button>';
+  h+='</div>';
+  h+='</div></div>';
+  var overlay=document.createElement('div');
+  overlay.id='mc-overlay';
+  overlay.innerHTML=h;
+  document.body.appendChild(overlay);
+}
+
+function closeManageClubs(){var o=document.getElementById('mc-overlay');if(o)o.remove();}
+function saveManageClubsEl(btn){saveManageClubs(btn.getAttribute('data-uid'),btn.getAttribute('data-name'));}
+function saveManageClubs(uid,name){
+  var clubs=[];
+  CLUBS.forEach(function(club){
+    var cb=document.getElementById('mc_'+safeName(club));
+    if(cb&&cb.checked)clubs.push(club);
   });
   dbRef('players/'+uid+'/manages').set(clubs.length?clubs:null).then(function(){
+    document.getElementById('mc-overlay').remove();
     return loadPlayers();
   }).then(function(){
     renderAdmin();
