@@ -1015,9 +1015,10 @@ function setTab(t){
   if(tab==="clubmgr"&&window._cmDirty&&t!=="clubmgr"){
     if(!confirm("You have unsaved changes in Club Manager. Leave without saving?"))return;
     window._cmDirty=false;
+    window._cmDirty=false;
   }
+  doSetTab(t);
 }
-
 function doSetTab(t){
   _profileDirty=false;window._cmDirty=false;
   if(t==="browse"){browseFilters={skills:[],venue:"",date:"",session:"",role:"",system:"",anySkill:false};browseCalY=0;browseCalM=0;renderBrowse();}
