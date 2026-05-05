@@ -2256,7 +2256,9 @@ function renderGames(){
       h+='</div>';
       h+='<div style="text-align:right">';
       h+=statusHtml;
-      h+='<br><button class="btn btn-gold" style="margin-top:6px;padding:6px 14px;font-size:12px" disabled>Register</button>';
+      var btnDisabled=avail<=0?'disabled':'';
+      var btnData='data-club="'+selectedClub+'" data-date="'+s.date+'" data-sk="'+sKey+'" data-tables="'+tables+'"';
+      h+='<br><button class="btn btn-gold" style="margin-top:6px;padding:6px 14px;font-size:12px" '+btnDisabled+' '+btnData+' onclick="showRegistrationForm(this)">Register</button>';
       h+='</div>';
       h+='</div>';
       h+='</div>';
@@ -2269,6 +2271,202 @@ function renderGames(){
   }).catch(function(){
     setHTML("content",'<div class="page"><div class="page-title">&#127183; Games</div><div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">Unable to load registration data. Please try again.</div></div>');
   });
+}
+
+function showRegistrationForm(btn){
+  var club=btn.getAttribute('data-club');
+  var date=btn.getAttribute('data-date');
+  var sk=btn.getAttribute('data-sk');
+  var tables=parseInt(btn.getAttribute('data-tables'))||0;
+
+  // Load current registrations to show available seats
+  dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk).once('value').then(function(snap){
+    var regData=snap.exists()?snap.val():{};
+    var pairs=regData.pairs||{};
+
+    // Build taken seats map
+    var takenSeats={};
+    Object.values(pairs).forEach(function(pair){
+      if(pair.seat1)takenSeats[pair.table+'_'+pair.seat1]=pair.player1name||'Taken';
+      if(pair.seat2)takenSeats[pair.table+'_'+pair.seat2]=pair.player2name||'Taken';
+    });
+
+    var h='<div class="page"><div class="page-title">Register for Game</div>';
+    h+='<div style="font-size:13px;color:var(--tm);margin-bottom:4px">'+club+'</div>';
+    h+='<div style="font-size:13px;color:var(--tm);margin-bottom:16px">'+formatDateLong(date)+'</div>';
+
+    // Partner search
+    h+='<div class="form-box" style="margin-bottom:16px">';
+    h+='<label class="flabel">Select Your Partner</label>';
+    h+='<div style="font-size:12px;color:var(--tl);margin-bottom:8px">Both players must be registered in the app.</div>';
+    h+='<input class="finput" id="reg-partner-search" type="text" placeholder="Type partner name..." oninput="filterRegPartners(this.value)" style="margin-bottom:8px"/>';
+    h+='<div id="reg-partner-list" style="max-height:180px;overflow-y:auto;border:1px solid var(--cream-dark);border-radius:6px">';
+    players.filter(function(p){return p.uid!==me.uid;}).forEach(function(p){
+      h+='<div class="reg-partner-item" data-uid="'+p.uid+'" data-name="'+p.displayName+'" onclick="selectRegPartner(this)" ';
+      h+='style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--cream-dark)">';
+      h+=p.displayName+(p.skill?' — '+p.skill:'')+(p.masterpoints?' — '+p.masterpoints+' MPs':'');
+      h+='</div>';
+    });
+    h+='</div>';
+    h+='<div id="reg-partner-selected" style="margin-top:8px;font-size:13px;color:var(--green);display:none"></div>';
+    h+='</div>';
+
+    // Table diagram
+    h+='<div class="form-box" style="margin-bottom:16px">';
+    h+='<label class="flabel">Select Your Seat</label>';
+    h+='<div style="font-size:12px;color:var(--tl);margin-bottom:12px">Tap an available seat. Your partner takes the opposite seat in the same direction.</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">';
+
+    for(var t=1;t<=tables;t++){
+      h+='<div style="background:rgba(10,24,18,0.5);border:1px solid rgba(201,168,76,0.3);border-radius:8px;padding:12px;text-align:center">';
+      h+='<div style="font-size:11px;font-weight:700;color:var(--gold-dim);margin-bottom:8px">TABLE '+t+'</div>';
+
+      // Draw table diagram
+      var seats=['N','E','S','W'];
+      h+='<div style="position:relative;width:100px;height:100px;margin:0 auto">';
+      // Table surface
+      h+='<div style="position:absolute;top:25px;left:25px;width:50px;height:50px;background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.3);border-radius:4px"></div>';
+
+      var seatPos={
+        N:{top:'0px',left:'35px'},
+        S:{top:'70px',left:'35px'},
+        E:{top:'35px',left:'70px'},
+        W:{top:'35px',left:'0px'}
+      };
+      var seatColors={N:'#2980b9',S:'#2980b9',E:'#27ae60',W:'#27ae60'};
+
+      seats.forEach(function(seat){
+        var taken=takenSeats[t+'_'+seat];
+        var pos=seatPos[seat];
+        var bgColor=taken?'rgba(100,100,100,0.5)':'rgba(201,168,76,0.8)';
+        var cursor=taken?'not-allowed':'pointer';
+        var title=taken?taken:'Click to take '+seat+' seat';
+        h+='<div data-table="'+t+'" data-seat="'+seat+'" data-club="'+club+'" data-date="'+date+'" data-sk="'+sk+'" ';
+        h+='onclick="'+(taken?'':'selectSeat(this)')+'" ';
+        h+='title="'+title+'" ';
+        h+='style="position:absolute;top:'+pos.top+';left:'+pos.left+';width:28px;height:28px;';
+        h+='background:'+bgColor+';border-radius:50%;display:flex;align-items:center;justify-content:center;';
+        h+='font-size:11px;font-weight:700;color:white;cursor:'+cursor+';border:2px solid '+(taken?'#666':'var(--gold)')+'">'+seat+'</div>';
+      });
+      h+='</div>';
+      h+='</div>';
+    }
+    h+='</div>';
+    h+='<div id="reg-seat-selected" style="margin-top:8px;font-size:13px;color:var(--green);display:none"></div>';
+    h+='</div>';
+
+    // No-show reminder
+    h+='<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:#7a5a00;line-height:1.6">';
+    h+='<strong>Please note:</strong> By registering you are committing to attend this game. If you cannot make it, please cancel as soon as possible so another pair can take your spot. Repeated no-shows may result in loss of pre-registration privileges.';
+    h+='</div>';
+
+    // Confirm button
+    h+='<button class="btn btn-gold" id="reg-confirm-btn" data-club="'+club+'" data-date="'+date+'" data-sk="'+sk+'" onclick="confirmRegEl(this)" disabled>Confirm Registration</button>';
+    h+='<button class="btn" style="margin-left:8px" onclick="renderGames()">Cancel</button>';
+    h+='</div>';
+
+    setHTML('content',h);
+    window._regTable=null;
+    window._regSeat=null;
+    window._regPartnerUid=null;
+    window._regPartnerName=null;
+  });
+}
+
+function filterRegPartners(val){
+  var items=document.querySelectorAll('.reg-partner-item');
+  items.forEach(function(item){
+    item.style.display=val===''||item.textContent.toLowerCase().indexOf(val.toLowerCase())>=0?'':'none';
+  });
+}
+
+function selectRegPartner(el){
+  document.querySelectorAll('.reg-partner-item').forEach(function(i){i.style.background='';});
+  el.style.background='rgba(201,168,76,0.15)';
+  window._regPartnerUid=el.getAttribute('data-uid');
+  window._regPartnerName=el.getAttribute('data-name');
+  var sel=document.getElementById('reg-partner-selected');
+  if(sel){sel.style.display='block';sel.innerHTML='&#10003; Partner: <strong>'+window._regPartnerName+'</strong>';}
+  checkRegReady();
+}
+
+function selectSeat(el){
+  // Deselect all seats
+  document.querySelectorAll('[data-seat]').forEach(function(s){
+    if(!s.title.includes('Click to take'))return; // skip taken seats
+    s.style.border='2px solid var(--gold)';
+    s.style.background='rgba(201,168,76,0.8)';
+  });
+  // Highlight selected seat and its pair
+  var seat=el.getAttribute('data-seat');
+  var table=el.getAttribute('data-table');
+  var pair={N:'S',S:'N',E:'W',W:'E'};
+  window._regTable=table;
+  window._regSeat=seat;
+  window._regSeatPair=pair[seat];
+
+  // Highlight both seats in the direction
+  document.querySelectorAll('[data-seat][data-table="'+table+'"]').forEach(function(s){
+    var s2=s.getAttribute('data-seat');
+    if(s2===seat||s2===pair[seat]){
+      s.style.background='rgba(39,174,96,0.9)';
+      s.style.border='2px solid #27ae60';
+    }
+  });
+
+  var sel=document.getElementById('reg-seat-selected');
+  if(sel){sel.style.display='block';sel.innerHTML='&#10003; Table '+table+' — <strong>'+seat+'/'+pair[seat]+'</strong> direction';}
+  checkRegReady();
+}
+
+function confirmRegEl(btn){
+  confirmRegistration(btn.getAttribute('data-club'),btn.getAttribute('data-date'),btn.getAttribute('data-sk'));
+}
+
+function checkRegReady(){
+  var btn=document.getElementById('reg-confirm-btn');
+  if(btn)btn.disabled=!(window._regPartnerUid&&window._regTable&&window._regSeat);
+}
+
+function confirmRegistration(club,date,sk){
+  if(!window._regPartnerUid||!window._regTable||!window._regSeat){alert('Please select a partner and a seat.');return;}
+  var pair={N:'S',S:'N',E:'W',W:'E'};
+  var pairData={
+    player1uid:me.uid,
+    player1name:me.displayName,
+    player1seat:window._regSeat,
+    player2uid:window._regPartnerUid,
+    player2name:window._regPartnerName,
+    player2seat:pair[window._regSeat],
+    table:parseInt(window._regTable),
+    direction:(window._regSeat==='N'||window._regSeat==='S')?'N/S':'E/W',
+    seat1:window._regSeat,
+    seat2:pair[window._regSeat],
+    confirmedBy1:true,
+    confirmedBy2:false,
+    ts:Date.now()
+  };
+  var pairId=me.uid+'_'+window._regPartnerUid;
+  dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs/'+pairId).set(pairData).then(function(){
+    // Notify partner via in-app message
+    var msgText='You have been registered for a game at '+club+' on '+formatDateLong(date)+
+      ' ('+sk.replace(/_/g,' ')+') by '+me.displayName+
+      '. You will be sitting '+pairData.direction+' at Table '+pairData.table+
+      '. Please confirm you can attend or cancel if you cannot make it.';
+    sendMessage(window._regPartnerUid,msgText,null);
+
+    // Also send email if partner has one
+    var partner=players.find(function(p){return p.uid===window._regPartnerUid;});
+    if(partner&&partner.contactEmail){
+      var mailLink='mailto:'+partner.contactEmail+
+        '?subject=Bridge Game Registration — '+club+' '+formatDateLong(date)+
+        '&body='+encodeURIComponent(msgText);
+      window.open(mailLink);
+    }
+
+    showToast('Registration confirmed! Your partner has been notified.');
+    renderGames();
+  }).catch(function(e){alert('Registration failed: '+e.message);});
 }
 
 function formatDateLong(ds){
