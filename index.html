@@ -2137,23 +2137,91 @@ function renderGames(){
   var h='<div class="page"><div class="page-title">&#127183; Games</div>';
   h+='<div class="page-sub">Club pre-registration</div>';
 
-  // Club selector dropdown
-  h+='<div style="margin-bottom:16px">';
-  h+='<label class="flabel">Select a Club</label>';
-  h+='<select class="finput" onchange="window._gamesClub=this.value;renderGames()" style="font-size:14px">';
-  h+='<option value="">-- Choose a club --</option>';
+  // Load all registration data first, then build the page
+  // We need to check which clubs have table limits configured
+  var today=new Date();today.setHours(0,0,0,0);
+  
+  // Build sessions for all clubs
+  var allSessions={};
   CLUBS.forEach(function(club){
-    h+='<option value="'+club+'"'+(selectedClub===club?' selected':'')+'>'+club+'</option>';
+    var sched=CLUB_SCHEDULES[club]||{};
+    var sessions=[];
+    for(var d=0;d<28;d++){
+      var dt=new Date(today);
+      dt.setDate(today.getDate()+d);
+      var dow=dt.getDay();
+      var daySessions=sched[dow]||[];
+      if(daySessions.length>0){
+        var mm=dt.getMonth()+1;
+        var dd=dt.getDate();
+        var dateStr=dt.getFullYear()+'-'+(mm<10?'0'+mm:mm)+'-'+(dd<10?'0'+dd:dd);
+        daySessions.forEach(function(sess){
+          sessions.push({date:dateStr,session:sess,dateObj:new Date(dt)});
+        });
+      }
+    }
+    if(sessions.length)allSessions[club]=sessions;
   });
-  h+='</select>';
-  h+='</div>';
 
-  if(!selectedClub){
-    h+='<div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">Select a club above to see upcoming games.</div>';
-    h+='</div>';
-    setHTML("content",h);
-    return;
-  }
+  // Check which clubs have at least one session with tables configured
+  var regPath='registrations';
+  dbRef(regPath).once('value').then(function(snap){
+    var regData=snap.exists()?snap.val():{};
+    
+    // Find clubs with table limits
+    var clubsWithReg=CLUBS.filter(function(club){
+      var snClub=safeName(club);
+      var clubReg=regData[snClub]||{};
+      var sessions=allSessions[club]||[];
+      return sessions.some(function(s){
+        var sKey=safeKey(s.session);
+        var dateReg=clubReg[s.date]||{};
+        var sessReg=dateReg[sKey]||{};
+        return sessReg.tables>0;
+      });
+    });
+
+    if(clubsWithReg.length===0){
+      h+='<div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">No club games are currently open for registration.</div>';
+      h+='</div>';
+      setHTML("content",h);
+      return;
+    }
+
+    // If selected club no longer has registration, reset
+    if(selectedClub&&clubsWithReg.indexOf(selectedClub)<0)selectedClub='';
+    if(clubsWithReg.length===1)selectedClub=clubsWithReg[0];
+    window._gamesClub=selectedClub;
+
+    // Club selector - only clubs with registration
+    if(clubsWithReg.length>1){
+      h+='<div style="margin-bottom:16px">';
+      h+='<label class="flabel">Select a Club</label>';
+      h+='<select class="finput" onchange="window._gamesClub=this.value;renderGames()" style="font-size:14px">';
+      h+='<option value="">-- Choose a club --</option>';
+      clubsWithReg.forEach(function(club){
+        h+='<option value="'+club+'"'+(selectedClub===club?' selected':'')+'>'+club+'</option>';
+      });
+      h+='</select>';
+      h+='</div>';
+    }
+
+    if(!selectedClub&&clubsWithReg.length>1){
+      h+='<div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">Select a club above to see upcoming games.</div>';
+      h+='</div>';
+      setHTML("content",h);
+      return;
+    }
+
+    // Show sessions for selected club that have table limits
+    var snClub=safeName(selectedClub);
+    var clubReg=regData[snClub]||{};
+    var sessions=(allSessions[selectedClub]||[]).filter(function(s){
+      var sKey=safeKey(s.session);
+      var dateReg=clubReg[s.date]||{};
+      var sessReg=dateReg[sKey]||{};
+      return sessReg.tables>0;
+    });
 
   // Get sessions for selected club over next 4 weeks
   var today=new Date();today.setHours(0,0,0,0);
@@ -2199,43 +2267,36 @@ function renderGames(){
       h+='</div>';
       h+='</div>';
 
-      // Load registration data
-      (function(club,date,sk,id){
-        dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk).once('value').then(function(snap){
-          var el=document.getElementById(id);
-          if(!el)return;
-          var tables=snap.exists()&&snap.val().tables?snap.val().tables:0;
-          var pairs=snap.exists()&&snap.val().pairs?Object.keys(snap.val().pairs).length:0;
-          var waitlist=snap.exists()&&snap.val().waitlist?Object.keys(snap.val().waitlist).length:0;
-          if(tables===0){
-            // No table limit set - hide registration entirely
-            el.style.display='none';
-            var btn=el.parentNode.querySelector('button');
-            if(btn)btn.style.display='none';
-          } else {
-            var maxPairs=tables*2;
-            var avail=maxPairs-pairs;
-            var statusHtml='';
-            if(avail<=0){
-              statusHtml='<span style="color:#c0392b;font-weight:700">Game is full</span>';
-              if(waitlist>0)statusHtml+='<br><span style="font-size:11px;color:var(--tl)">'+waitlist+' on waitlist</span>';
-            } else {
-              var color=avail>4?'var(--green)':avail>2?'#f57f17':'#e67e22';
-              statusHtml='<span style="color:'+color+'">Open seats available for '+avail+' pair'+(avail===1?'':'s')+'</span>';
-            }
-            el.innerHTML=statusHtml;
-          }
-        }).catch(function(){
-          var el=document.getElementById(id);
-          if(el)el.innerHTML='<span style="color:var(--tl)">Registration coming soon</span>';
-        });
-      })(selectedClub,s.date,sKey,elId);
+      // Use already-loaded regData
+      (function(club,date,sk,id,clubRegData){
+        var el=document.getElementById(id);
+        if(!el)return;
+        var dateReg=clubRegData[date]||{};
+        var sessReg=dateReg[sk]||{};
+        var tables=sessReg.tables||0;
+        var pairs=sessReg.pairs?Object.keys(sessReg.pairs).length:0;
+        var waitlist=sessReg.waitlist?Object.keys(sessReg.waitlist).length:0;
+        var maxPairs=tables*2;
+        var avail=maxPairs-pairs;
+        var statusHtml='';
+        if(avail<=0){
+          statusHtml='<span style="color:#c0392b;font-weight:700">Game is full</span>';
+          if(waitlist>0)statusHtml+='<br><span style="font-size:11px;color:var(--tl)">'+waitlist+' on waitlist</span>';
+        } else {
+          var color=avail>4?'var(--green)':avail>2?'#f57f17':'#e67e22';
+          statusHtml='<span style="color:'+color+'">Open seats available for '+avail+' pair'+(avail===1?'':'s')+'</span>';
+        }
+        el.innerHTML=statusHtml;
+      })(selectedClub,s.date,sKey,elId,clubReg);
     });
     h+='</div>';
   }
 
-  h+='</div>';
-  setHTML("content",h);
+    h+='</div>';
+    setHTML("content",h);
+  }).catch(function(){
+    setHTML("content",'<div class="page"><div class="page-title">&#127183; Games</div><div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">Unable to load registration data. Please try again.</div></div>');
+  });
 }
 
 function formatDateLong(ds){
