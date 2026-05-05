@@ -2270,10 +2270,10 @@ function renderGames(){
       })(selectedClub,s.date,sKey,elId,clubReg);
     });
     h+='</div>';
+    setHTML('content',h);
   }
 
     h+='</div>';
-    setHTML("content",h);
   }).catch(function(){
     setHTML("content",'<div class="page"><div class="page-title">&#127183; Games</div><div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">Unable to load registration data. Please try again.</div></div>');
   });
