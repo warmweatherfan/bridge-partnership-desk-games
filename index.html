@@ -2467,9 +2467,33 @@ function cancelRegistration(btn){
   var date=btn.getAttribute('data-date');
   var sk=btn.getAttribute('data-sk');
   var pairId=btn.getAttribute('data-pairid');
-  dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs/'+pairId).remove().then(function(){
-    showToast('Registration cancelled.');
-    renderGames();
+
+  // Get partner info before deleting
+  dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs/'+pairId).once('value').then(function(snap){
+    var pair=snap.exists()?snap.val():{};
+    var partnerUid=pair.player1uid===me.uid?pair.player2uid:pair.player1uid;
+    var partnerName=pair.player1uid===me.uid?pair.player2name:pair.player1name;
+
+    // Delete the registration
+    return dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs/'+pairId).remove().then(function(){
+      // Notify partner via in-app message
+      var msgText=me.displayName+' has cancelled your registration for the game at '+club+
+        ' on '+formatDateLong(date)+' ('+sk.replace(/_/g,' ')+').'+
+        ' You no longer have a reserved spot for this game.';
+      if(partnerUid)sendMessage(partnerUid,msgText,null);
+
+      // Send email if partner has one
+      var partner=players.find(function(p){return p.uid===partnerUid;});
+      if(partner&&partner.contactEmail){
+        var mailLink='mailto:'+partner.contactEmail+
+          '?subject=Bridge Game Registration Cancelled — '+club+' '+formatDateLong(date)+
+          '&body='+encodeURIComponent(msgText);
+        window.open(mailLink);
+      }
+
+      showToast('Registration cancelled. Your partner has been notified.');
+      renderGames();
+    });
   }).catch(function(e){alert('Error: '+e.message);});
 }
 
@@ -2517,7 +2541,9 @@ function checkRegReady(){
 }
 
 function confirmRegistration(club,date,sk){
-  if(!window._regPartnerUid||!window._regTable||!window._regSeat){alert('Please select a partner and a seat.');return;}
+  if(!window._regPartnerUid&&!window._regTable){showToast('Please select a partner and a seat to continue.');return;}
+  if(!window._regPartnerUid){showToast('Please select a partner to continue.');return;}
+  if(!window._regTable||!window._regSeat){showToast('Please select a table and seat to continue.');return;}
   var pair={N:'S',S:'N',E:'W',W:'E'};
   var pairData={
     player1uid:me.uid,
