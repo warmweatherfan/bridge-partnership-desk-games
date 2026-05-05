@@ -2048,6 +2048,90 @@ function showHelpTab(tab){
     }
   }
 }
+function loadGameSetup(club){
+  var el=document.getElementById('gs-sessions');
+  if(!el)return;
+  if(!club){el.innerHTML='Select a club above to configure sessions.';return;}
+  
+  var today=new Date();today.setHours(0,0,0,0);
+  var sched=CLUB_SCHEDULES[club]||{};
+  var sessions=[];
+  
+  for(var d=0;d<28;d++){
+    var dt=new Date(today);
+    dt.setDate(today.getDate()+d);
+    var dow=dt.getDay();
+    var daySessions=sched[dow]||[];
+    if(daySessions.length>0){
+      var mm=dt.getMonth()+1;
+      var dd=dt.getDate();
+      var dateStr=dt.getFullYear()+'-'+(mm<10?'0'+mm:mm)+'-'+(dd<10?'0'+dd:dd);
+      daySessions.forEach(function(sess){
+        sessions.push({date:dateStr,session:sess,dateObj:new Date(dt)});
+      });
+    }
+  }
+  
+  if(sessions.length===0){
+    el.innerHTML='<div style="color:var(--tl);font-style:italic">No upcoming sessions found.</div>';
+    return;
+  }
+  
+  var h='<table style="width:100%;border-collapse:collapse;font-size:13px">';
+  h+='<tr style="border-bottom:1px solid var(--cream-dark)">';
+  h+='<th style="text-align:left;padding:6px 4px;color:var(--td)">Date</th>';
+  h+='<th style="text-align:left;padding:6px 4px;color:var(--td)">Session</th>';
+  h+='<th style="text-align:center;padding:6px 4px;color:var(--td)">Tables</th>';
+  h+='<th style="padding:6px 4px"></th>';
+  h+='</tr>';
+  
+  sessions.forEach(function(s){
+    var sKey=safeKey(s.session);
+    var snClub=safeName(club);
+    var inputId='gt_'+snClub+'_'+s.date+'_'+sKey;
+    var savedId='gs_'+snClub+'_'+s.date+'_'+sKey;
+    
+    h+='<tr style="border-bottom:1px solid var(--cream-dark)">';
+    h+='<td style="padding:8px 4px;color:var(--td)">'+formatDateLong(s.date)+'</td>';
+    h+='<td style="padding:8px 4px;color:var(--tm)">'+s.session+'</td>';
+    h+='<td style="padding:8px 4px;text-align:center">';
+    h+='<input type="number" min="0" max="30" class="admin-input" id="'+inputId+'" style="width:60px;text-align:center;font-size:13px;padding:4px" value="0"/>';
+    h+='</td>';
+    h+='<td style="padding:8px 4px">';
+    h+='<button class="btn btn-gold" style="margin-top:0;padding:4px 10px;font-size:12px" ';
+    h+='data-club="'+club+'" data-date="'+s.date+'" data-sk="'+sKey+'" data-iid="'+inputId+'" data-sid="'+savedId+'" ';
+    h+='onclick="adminSaveTableCount(this)">Save</button>';
+    h+='<span id="'+savedId+'" style="font-size:11px;color:var(--green);margin-left:6px;display:none">Saved!</span>';
+    h+='</td>';
+    h+='</tr>';
+    
+    // Load existing table count
+    (function(club2,date,sk,iid){
+      dbRef('registrations/'+safeName(club2)+'/'+date+'/'+sk+'/tables').once('value').then(function(snap){
+        var inp=document.getElementById(iid);
+        if(inp&&snap.exists())inp.value=snap.val();
+      });
+    })(club,s.date,sKey,inputId);
+  });
+  
+  h+='</table>';
+  el.innerHTML=h;
+}
+
+function adminSaveTableCount(btn){
+  var club=btn.getAttribute('data-club');
+  var date=btn.getAttribute('data-date');
+  var sk=btn.getAttribute('data-sk');
+  var iid=btn.getAttribute('data-iid');
+  var sid=btn.getAttribute('data-sid');
+  var inp=document.getElementById(iid);
+  var tables=inp?parseInt(inp.value)||0:0;
+  dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/tables').set(tables).then(function(){
+    var saved=document.getElementById(sid);
+    if(saved){saved.style.display='inline';setTimeout(function(){saved.style.display='none';},2000);}
+  }).catch(function(e){alert('Error: '+e.message);});
+}
+
 function renderGames(){
   var selectedClub=window._gamesClub||'';
   var h='<div class="page"><div class="page-title">&#127183; Games</div>';
@@ -2495,6 +2579,26 @@ function renderAdmin(){
     });
   } else {
     h+='<div style="color:var(--tl);font-style:italic;font-size:14px">Add clubs first.</div>';
+  }
+  h+='</div>';
+
+
+  // Game Setup section
+  h+='<div class="admin-section"><h3>Game Setup</h3>';
+  h+='<div style="font-size:13px;color:var(--tm);margin-bottom:12px">Set the number of tables for upcoming club sessions to open registration.</div>';
+  
+  if(CLUBS.length){
+    // Club selector for game setup
+    h+='<label class="flabel">Select Club</label>';
+    h+='<select class="admin-input" id="gs-club-sel" onchange="loadGameSetup(this.value)" style="margin-bottom:12px;font-size:13px">';
+    h+='<option value="">-- Choose a club --</option>';
+    CLUBS.forEach(function(c){
+      h+='<option value="'+c+'">'+c+'</option>';
+    });
+    h+='</select>';
+    h+='<div id="gs-sessions">Select a club above to configure sessions.</div>';
+  } else {
+    h+='<div style="color:var(--tl);font-style:italic">No clubs configured yet.</div>';
   }
   h+='</div>';
 
