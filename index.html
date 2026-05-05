@@ -1084,6 +1084,7 @@ function modalDiscard(){
 function renderTabBar(){
   var unread=messages.filter(function(m){return m.toUid===me.uid&&!m.read;}).length;
   var tabs=[{id:"browse",l:"Find a Partner"},{id:"games",l:"&#127183; Games"},{id:"messages",l:"&#9993; Msgs"+(unread>0?" ("+unread+")":"")},{id:"profile",l:"&#9824; Profile"},{id:"help",l:"&#63; Help"}];
+    if(me.manages&&me.manages.length)tabs.push({id:"clubmgr",l:"&#127968; Club Manager"});
   if(me&&(me.admin===true||me.admin==="true"))tabs.push({id:"admin",l:"&#9881; Admin"});
   el("tabbar").innerHTML=tabs.map(function(t){return '<button class="tab'+(tab===t.id?" active":"")+'" data-tab="'+t.id+'" onclick="setTabEl(this)">'+t.l+'</button>';}).join("");
 }
