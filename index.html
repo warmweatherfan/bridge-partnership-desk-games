@@ -2138,7 +2138,6 @@ function renderGames(){
   h+='<div class="page-sub">Club pre-registration</div>';
 
   // Load all registration data first, then build the page
-  // We need to check which clubs have table limits configured
   var today=new Date();today.setHours(0,0,0,0);
   
   // Build sessions for all clubs
@@ -2168,6 +2167,49 @@ function renderGames(){
   dbRef(regPath).once('value').then(function(snap){
     var regData=snap.exists()?snap.val():{};
     
+    // My Registrations section
+    var myRegs=[];
+    CLUBS.forEach(function(club){
+      var snClub=safeName(club);
+      var clubReg=regData[snClub]||{};
+      var sessions=allSessions[club]||[];
+      sessions.forEach(function(s){
+        var sKey=safeKey(s.session);
+        var dateReg=clubReg[s.date]||{};
+        var sessReg=dateReg[sKey]||{};
+        var pairs=sessReg.pairs||{};
+        Object.entries(pairs).forEach(function(e){
+          var pairId=e[0],pair=e[1];
+          if(pair.player1uid===me.uid||pair.player2uid===me.uid){
+            myRegs.push({club:club,date:s.date,session:s.session,sk:sKey,pairId:pairId,pair:pair,tables:sessReg.tables||0});
+          }
+        });
+      });
+    });
+
+    if(myRegs.length>0){
+      h+='<div class="form-box" style="margin-bottom:16px">';
+      h+='<div style="font-family:Playfair Display,serif;font-size:15px;font-weight:700;color:var(--td);margin-bottom:12px">&#10003; Your Upcoming Registrations</div>';
+      myRegs.forEach(function(r){
+        var myName=r.pair.player1uid===me.uid?r.pair.player1name:r.pair.player2name;
+        var mySeat=r.pair.player1uid===me.uid?r.pair.player1seat:r.pair.player2seat;
+        var partnerName=r.pair.player1uid===me.uid?r.pair.player2name:r.pair.player1name;
+        var partnerUid=r.pair.player1uid===me.uid?r.pair.player2uid:r.pair.player1uid;
+        var partnerObj=players.find(function(p){return p.uid===partnerUid;})||{};
+        var partnerEmail=partnerObj.contactEmail||'';
+        h+='<div style="padding:10px 0;border-bottom:1px solid var(--cream-dark)">';
+        h+='<div style="font-size:14px;font-weight:700;color:var(--td)">'+r.club+'</div>';
+        h+='<div style="font-size:13px;color:var(--tm);margin-top:2px">'+formatDateLong(r.date)+' &nbsp;·&nbsp; '+r.session+'</div>';
+        h+='<div style="font-size:13px;color:var(--tm);margin-top:2px">Table '+r.pair.table+' &nbsp;·&nbsp; '+r.pair.direction+' &nbsp;·&nbsp; Partner: <strong>'+partnerName+'</strong></div>';
+        h+='<button class="btn btn-red" style="margin-top:6px;padding:4px 12px;font-size:12px" ';
+        h+='data-club="'+r.club+'" data-date="'+r.date+'" data-sk="'+r.sk+'" data-pairid="'+r.pairId+'" ';
+        h+='data-partneruid="'+partnerUid+'" data-partnername="'+partnerName+'" data-partneremail="'+partnerEmail+'" ';
+        h+='onclick="cancelRegistration(this)">Cancel</button>';
+        h+='</div>';
+      });
+      h+='</div>';
+    }
+
     // Find clubs with table limits
     var clubsWithReg=CLUBS.filter(function(club){
       var snClub=safeName(club);
