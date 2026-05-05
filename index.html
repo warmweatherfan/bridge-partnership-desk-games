@@ -2537,9 +2537,9 @@ function updateRegSummary(){
 }
 
 function checkRegReady(){
-  var btn=document.getElementById('reg-confirm-btn');
-  if(btn)btn.disabled=!(window._regPartnerUid&&window._regTable&&window._regSeat);
+  // Validation handled in confirmRegistration
 }
+
 
 function confirmRegistration(club,date,sk){
   if(!window._regPartnerUid&&!window._regTable){alert('Please select a partner and a seat to continue.');return;}
