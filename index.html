@@ -2049,73 +2049,77 @@ function showHelpTab(tab){
   }
 }
 function renderGames(){
+  var selectedClub=window._gamesClub||'';
   var h='<div class="page"><div class="page-title">&#127183; Games</div>';
-  h+='<div class="page-sub">Upcoming club sessions</div>';
+  h+='<div class="page-sub">Club pre-registration</div>';
 
-  // Get all clubs with schedules
-  var today=new Date();today.setHours(0,0,0,0);
-
-  // Build list of upcoming sessions across all clubs
-  var sessions=[];
+  // Club selector dropdown
+  h+='<div style="margin-bottom:16px">';
+  h+='<label class="flabel">Select a Club</label>';
+  h+='<select class="finput" onchange="window._gamesClub=this.value;renderGames()" style="font-size:14px">';
+  h+='<option value="">-- Choose a club --</option>';
   CLUBS.forEach(function(club){
-    var sched=CLUB_SCHEDULES[club]||{};
-    // Generate next 4 weeks of sessions
-    for(var d=0;d<28;d++){
-      var dt=new Date(today);
-      dt.setDate(today.getDate()+d);
-      var dow=dt.getDay();
-      var daySessions=sched[dow]||[];
-      if(daySessions.length>0){
-        var mm=dt.getMonth()+1;
-        var dd=dt.getDate();
-        var dateStr=dt.getFullYear()+'-'+(mm<10?'0'+mm:mm)+'-'+(dd<10?'0'+dd:dd);
-        daySessions.forEach(function(sess){
-          sessions.push({club:club,date:dateStr,session:sess,dateObj:dt});
-        });
-      }
-    }
+    h+='<option value="'+club+'"'+(selectedClub===club?' selected':'')+'>'+club+'</option>';
   });
+  h+='</select>';
+  h+='</div>';
 
-  // Sort by date
-  sessions.sort(function(a,b){return a.dateObj-b.dateObj;});
+  if(!selectedClub){
+    h+='<div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">Select a club above to see upcoming games.</div>';
+    h+='</div>';
+    setHTML("content",h);
+    return;
+  }
+
+  // Get sessions for selected club over next 4 weeks
+  var today=new Date();today.setHours(0,0,0,0);
+  var sched=CLUB_SCHEDULES[selectedClub]||{};
+  var sessions=[];
+
+  for(var d=0;d<28;d++){
+    var dt=new Date(today);
+    dt.setDate(today.getDate()+d);
+    var dow=dt.getDay();
+    var daySessions=sched[dow]||[];
+    if(daySessions.length>0){
+      var mm=dt.getMonth()+1;
+      var dd=dt.getDate();
+      var dateStr=dt.getFullYear()+'-'+(mm<10?'0'+mm:mm)+'-'+(dd<10?'0'+dd:dd);
+      daySessions.forEach(function(sess){
+        sessions.push({date:dateStr,session:sess,dateObj:new Date(dt)});
+      });
+    }
+  }
 
   if(sessions.length===0){
-    h+='<div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">No upcoming club sessions found.</div>';
+    h+='<div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">No upcoming sessions found for '+selectedClub+'.</div>';
   } else {
-    var currentClub='';
+    h+='<div class="form-box" style="margin-bottom:16px">';
+    h+='<div style="font-family:Playfair Display,serif;font-size:16px;font-weight:700;color:var(--td);margin-bottom:12px">&#127968; '+selectedClub+'</div>';
+
     sessions.forEach(function(s){
-      // Club header
-      if(s.club!==currentClub){
-        if(currentClub!=='')h+='</div>';
-        currentClub=s.club;
-        h+='<div class="form-box" style="margin-bottom:16px">';
-        h+='<div style="font-family:Playfair Display,serif;font-size:16px;font-weight:700;color:var(--td);margin-bottom:12px">&#127968; '+s.club+'</div>';
-      }
-
-      // Session row
       var sKey=safeKey(s.session);
-      var regPath='registrations/'+safeName(s.club)+'/'+s.date+'/'+sKey;
-      var vi=VENUE_INFO[s.club]||{};
+      var snClub=safeName(selectedClub);
+      var elId='grs_'+snClub+'_'+s.date+'_'+sKey;
 
-      h+='<div style="padding:10px 0;border-bottom:1px solid var(--cream-dark)">';
+      h+='<div style="padding:12px 0;border-bottom:1px solid var(--cream-dark)">';
       h+='<div style="display:flex;justify-content:space-between;align-items:center">';
       h+='<div>';
       h+='<div style="font-size:14px;font-weight:700;color:var(--td)">'+formatDateLong(s.date)+'</div>';
       h+='<div style="font-size:13px;color:var(--tm);margin-top:2px">'+s.session+'</div>';
       h+='</div>';
       h+='<div style="text-align:right">';
-      h+='<div class="game-reg-status" id="grs_'+safeName(s.club)+'_'+s.date+'_'+sKey+'" style="font-size:12px;color:var(--tl)">Loading...</div>';
+      h+='<div class="game-reg-status" id="'+elId+'" style="font-size:12px;color:var(--tl)">Loading...</div>';
       h+='<button class="btn btn-gold" style="margin-top:6px;padding:6px 14px;font-size:12px" disabled>Register</button>';
       h+='</div>';
       h+='</div>';
       h+='</div>';
 
-      // Load registration data for this session
-      (function(club,date,sk,elId){
+      // Load registration data
+      (function(club,date,sk,id){
         dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk).once('value').then(function(snap){
-          var el=document.getElementById(elId);
+          var el=document.getElementById(id);
           if(!el)return;
-          // Get table count from venue info or default
           var tables=snap.exists()&&snap.val().tables?snap.val().tables:0;
           var pairs=snap.exists()&&snap.val().pairs?Object.keys(snap.val().pairs).length:0;
           var waitlist=snap.exists()&&snap.val().waitlist?Object.keys(snap.val().waitlist).length:0;
@@ -2123,17 +2127,17 @@ function renderGames(){
             el.innerHTML='<span style="color:var(--tl)">Registration coming soon</span>';
           } else {
             var avail=tables-pairs;
-            var color=avail>2?'var(--green)':avail>0?'#f57f17':'var(--red,#c0392b)';
-            el.innerHTML='<span style="color:'+color+'">'+avail+' of '+tables+' spots open</span>';
+            var color=avail>2?'var(--green)':avail>0?'#f57f17':'#c0392b';
+            el.innerHTML='<span style="color:'+color+'">'+avail+' of '+(tables*2)+' spots open</span>';
             if(waitlist>0)el.innerHTML+='<br><span style="font-size:11px;color:var(--tl)">'+waitlist+' on waitlist</span>';
           }
         }).catch(function(){
-          var el=document.getElementById(elId);
+          var el=document.getElementById(id);
           if(el)el.innerHTML='<span style="color:var(--tl)">Registration coming soon</span>';
         });
-      })(s.club,s.date,sKey,'grs_'+safeName(s.club)+'_'+s.date+'_'+sKey);
+      })(selectedClub,s.date,sKey,elId);
     });
-    if(currentClub!=='')h+='</div>';
+    h+='</div>';
   }
 
   h+='</div>';
