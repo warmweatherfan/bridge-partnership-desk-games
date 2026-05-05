@@ -1012,6 +1012,16 @@ function setTab(t){
     showUnsavedModal(t);
     return;
   }
+  if(tab==="clubmgr"&&window._cmDirty&&t!=="clubmgr"){
+    window._cmPendingTab=t;
+    showCmUnsavedModal(function(){
+      cmSave().then(function(){doSetTab(window._cmPendingTab);});
+    },function(){
+      window._cmDirty=false;
+      doSetTab(window._cmPendingTab);
+    });
+    return;
+  }
   doSetTab(t);
 }
 
@@ -2186,8 +2196,7 @@ function renderClubManager(){
 function cmSwitchClub(club){
   if(window._cmDirty){
     window._cmPendingClub=club;
-    showUnsavedModal(function(){
-      // Save
+    showCmUnsavedModal(function(){
       cmSave().then(function(){
         window._cmClub=window._cmPendingClub;
         window._cmDirty=false;
@@ -2195,7 +2204,6 @@ function cmSwitchClub(club){
         renderClubManager();
       });
     },function(){
-      // Discard
       window._cmClub=window._cmPendingClub;
       window._cmDirty=false;
       window._cmTableData={};
