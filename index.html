@@ -2149,11 +2149,13 @@ function renderClubManager(){
   // Club selector if managing multiple clubs
   var selectedClub=window._cmClub||myClubs[0];
   window._cmClub=selectedClub;
+  window._cmDirty=false;
+  window._cmTableData={};
 
   if(myClubs.length>1){
     h+='<div style="margin-bottom:16px">';
     h+='<label class="flabel">Select Club</label>';
-    h+='<select class="admin-input" onchange="window._cmClub=this.value;renderClubManager()" style="margin-bottom:0;font-size:13px">';
+    h+='<select class="admin-input" onchange="cmSwitchClub(this.value)" style="margin-bottom:0;font-size:13px">';
     myClubs.forEach(function(c){
       h+='<option value="'+c+'"'+(selectedClub===c?' selected':'')+'>'+c+'</option>';
     });
@@ -2161,20 +2163,37 @@ function renderClubManager(){
     h+='</div>';
   }
 
-  // Game Setup for selected club
-  h+='<div class="admin-section">';
-  h+='<h3>Game Setup — '+selectedClub+'</h3>';
-  h+='<div style="font-size:13px;color:var(--tm);margin-bottom:12px">Set the number of tables for upcoming sessions to open registration.</div>';
-  h+='<div id="cm-sessions">Loading...</div>';
+  // Save button at top
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
+  h+='<div style="font-size:14px;font-weight:700;color:var(--td)">Game Setup — '+selectedClub+'</div>';
+  h+='<button class="btn btn-gold" style="margin-top:0;padding:6px 16px" onclick="cmSave()">Save</button>';
   h+='</div>';
+  h+='<div style="font-size:13px;color:var(--tm);margin-bottom:12px">Set the number of tables for upcoming sessions to open registration.</div>';
+
+  // Sessions table
+  h+='<div id="cm-sessions"><div style="color:var(--tl);font-style:italic">Loading...</div></div>';
+
+  // Save button at bottom
+  h+='<div style="margin-top:16px;text-align:center">';
+  h+='<button class="btn btn-gold" style="padding:10px 32px" onclick="cmSave()">Save</button>';
+  h+='</div>';
+
   h+='</div>';
   setHTML("content",h);
-
-  // Load sessions
-  loadGameSetupForEl('cm-sessions', selectedClub);
+  cmLoadSessions(selectedClub);
 }
 
-function loadGameSetupForEl(elId, club){
+function cmSwitchClub(club){
+  if(window._cmDirty){
+    if(!confirm("You have unsaved changes. Discard them and switch clubs?"))return;
+  }
+  window._cmClub=club;
+  window._cmDirty=false;
+  window._cmTableData={};
+  renderClubManager();
+}
+
+function cmLoadSessions(club){
   var today=new Date();today.setHours(0,0,0,0);
   var sched=CLUB_SCHEDULES[club]||{};
   var sessions=[];
@@ -2194,7 +2213,7 @@ function loadGameSetupForEl(elId, club){
     }
   }
 
-  var el=document.getElementById(elId);
+  var el=document.getElementById('cm-sessions');
   if(!el)return;
 
   if(sessions.length===0){
@@ -2202,46 +2221,66 @@ function loadGameSetupForEl(elId, club){
     return;
   }
 
-  var h='<table style="width:100%;border-collapse:collapse;font-size:13px">';
-  h+='<tr style="border-bottom:1px solid var(--cream-dark)">';
-  h+='<th style="text-align:left;padding:6px 4px;color:var(--td)">Date</th>';
-  h+='<th style="text-align:left;padding:6px 4px;color:var(--td)">Session</th>';
-  h+='<th style="text-align:center;padding:6px 4px;color:var(--td)">Tables</th>';
-  h+='<th style="padding:6px 4px"></th>';
-  h+='</tr>';
-
-  sessions.forEach(function(s){
+  // Load all table counts then render
+  var promises=sessions.map(function(s){
     var sKey=safeKey(s.session);
-    var snClub=safeName(club);
-    var inputId='cm_'+snClub+'_'+s.date+'_'+sKey;
-    var savedId='cms_'+snClub+'_'+s.date+'_'+sKey;
-
-    h+='<tr style="border-bottom:1px solid var(--cream-dark)">';
-    h+='<td style="padding:8px 4px;color:var(--td)">'+formatDateLong(s.date)+'</td>';
-    h+='<td style="padding:8px 4px;color:var(--tm)">'+s.session+'</td>';
-    h+='<td style="padding:8px 4px;text-align:center">';
-    h+='<input type="number" min="0" max="30" class="admin-input" id="'+inputId+'" style="width:60px;text-align:center;font-size:13px;padding:4px" value="0"/>';
-    h+='</td>';
-    h+='<td style="padding:8px 4px">';
-    h+='<button class="btn btn-gold" style="margin-top:0;padding:4px 10px;font-size:12px" ';
-    h+='data-club="'+club+'" data-date="'+s.date+'" data-sk="'+sKey+'" data-iid="'+inputId+'" data-sid="'+savedId+'" ';
-    h+='onclick="adminSaveTableCount(this)">Save</button>';
-    h+='<span id="'+savedId+'" style="font-size:11px;color:var(--green);margin-left:6px;display:none">Saved!</span>';
-    h+='</td>';
-    h+='</tr>';
-
-    // Load existing table count
-    (function(club2,date,sk,iid){
-      dbRef('registrations/'+safeName(club2)+'/'+date+'/'+sk+'/tables').once('value').then(function(snap){
-        var inp=document.getElementById(iid);
-        if(inp&&snap.exists())inp.value=snap.val();
-      });
-    })(club,s.date,sKey,inputId);
+    return dbRef('registrations/'+safeName(club)+'/'+s.date+'/'+sKey+'/tables').once('value').then(function(snap){
+      return {date:s.date,session:s.session,sKey:sKey,tables:snap.exists()?snap.val():0};
+    });
   });
 
-  h+='</table>';
-  el.innerHTML=h;
+  Promise.all(promises).then(function(results){
+    // Store initial values
+    results.forEach(function(r){
+      window._cmTableData[r.date+'_'+r.sKey]=r.tables;
+    });
+
+    var h='<table style="width:100%;border-collapse:collapse;font-size:13px">';
+    h+='<tr style="border-bottom:1px solid var(--cream-dark)">';
+    h+='<th style="text-align:left;padding:6px 4px;color:var(--td)">Date</th>';
+    h+='<th style="text-align:left;padding:6px 4px;color:var(--td)">Session</th>';
+    h+='<th style="text-align:center;padding:6px 4px;color:var(--td)">Tables</th>';
+    h+='</tr>';
+
+    results.forEach(function(r){
+      var inputId='cm_'+r.date+'_'+r.sKey;
+      h+='<tr style="border-bottom:1px solid var(--cream-dark)">';
+      h+='<td style="padding:8px 4px;color:var(--td)">'+formatDateLong(r.date)+'</td>';
+      h+='<td style="padding:8px 4px;color:var(--tm)">'+r.session+'</td>';
+      h+='<td style="padding:8px 4px;text-align:center">';
+      h+='<input type="number" min="0" max="30" id="'+inputId+'" value="'+r.tables+'" ';
+      h+='oninput="window._cmDirty=true" ';
+      h+='style="width:60px;text-align:center;font-size:13px;padding:4px;border:1px solid var(--cream-dark);border-radius:4px;background:#fefcf8;color:#2a2a2a"/>';
+      h+='</td>';
+      h+='</tr>';
+    });
+    h+='</table>';
+    el.innerHTML=h;
+  });
 }
+
+function cmSave(){
+  var club=window._cmClub;
+  var snClub=safeName(club);
+  var promises=[];
+  Object.keys(window._cmTableData).forEach(function(key){
+    var parts=key.split('_');
+    // key format: date_sessionKey e.g. 2026-06-10_Open_pairs_at_12-30
+    // date is first 10 chars
+    var date=key.substring(0,10);
+    var sk=key.substring(11);
+    var inp=document.getElementById('cm_'+key);
+    if(inp){
+      var tables=parseInt(inp.value)||0;
+      promises.push(dbRef('registrations/'+snClub+'/'+date+'/'+sk+'/tables').set(tables));
+    }
+  });
+  Promise.all(promises).then(function(){
+    window._cmDirty=false;
+    showToast('Game setup saved!');
+  }).catch(function(e){alert('Error saving: '+e.message);});
+}
+
 
 function renderGames(){
   var selectedClub=window._gamesClub||'';
