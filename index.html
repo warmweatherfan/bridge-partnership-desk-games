@@ -2206,6 +2206,7 @@ function renderClubManager(){
 
 function cmMarkDirty(inp){
   window._cmDirty=true;
+  alert('cmMarkDirty called! _cmDirty='+window._cmDirty);
   inp.style.background='#fff9e6';
   var dm=document.getElementById('cm-dirty-msg');
   if(dm)dm.style.display='block';
