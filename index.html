@@ -1064,6 +1064,23 @@ function showUnsavedModal(nextTab){
   document.body.appendChild(modal);
 }
 
+function showCmUnsavedModal(onSave, onDiscard){
+  var overlay=document.createElement('div');
+  overlay.id='cm-unsaved-overlay';
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center';
+  var box=document.createElement('div');
+  box.style.cssText='background:#fefcf8;border-radius:12px;padding:28px 24px;max-width:320px;width:90%;text-align:center';
+  box.innerHTML='<div style="font-size:16px;font-weight:700;color:#1a1a1a;margin-bottom:8px">Unsaved Changes</div>'+
+    '<div style="font-size:13px;color:#3a3a3a;margin-bottom:20px">You have unsaved changes to your game setup.</div>'+
+    '<button id="cm-save-btn" style="width:100%;padding:10px;background:#b8860b;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;margin-bottom:8px">Save Changes</button>'+
+    '<button id="cm-disc-btn" style="width:100%;padding:10px;background:#e8e0d0;color:#1a1a1a;border:none;border-radius:6px;font-size:14px;cursor:pointer">Discard Changes</button>';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  document.getElementById('cm-save-btn').onclick=function(){overlay.remove();onSave();};
+  document.getElementById('cm-disc-btn').onclick=function(){overlay.remove();onDiscard();};
+}
+
+
 function closeUnsavedModal(){
   var m=document.getElementById('unsaved-modal');
   if(m)m.parentNode.removeChild(m);
