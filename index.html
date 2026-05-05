@@ -1022,6 +1022,7 @@ function doSetTab(t){
   if(t==="messages")renderMessages();
   if(t==="profile"){_profileDirty=false;renderProfile();}
   if(t==="admin")renderAdmin();
+  if(t==="clubmgr"){renderClubManager();return;}
   if(t==="help")renderHelp();
   if(t==="games")renderGames();
 }
