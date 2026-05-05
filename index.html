@@ -1008,18 +1008,17 @@ function filterVenuePills(){
 function markDirty(){_profileDirty=true;}
 
 function setTab(t){
-function setTab(t){
-  alert('setTab called: tab='+tab+' t='+t+' _cmDirty='+window._cmDirty);
+  if(tab==="profile"&&_profileDirty&&t!=="profile"){
     showUnsavedModal(t);
     return;
   }
   if(tab==="clubmgr"&&window._cmDirty&&t!=="clubmgr"){
     if(!confirm("You have unsaved changes in Club Manager. Leave without saving?"))return;
     window._cmDirty=false;
-    window._cmDirty=false;
   }
   doSetTab(t);
 }
+
 function doSetTab(t){
   _profileDirty=false;
   if(t==="browse"){browseFilters={skills:[],venue:"",date:"",session:"",role:"",system:"",anySkill:false};browseCalY=0;browseCalM=0;renderBrowse();}
