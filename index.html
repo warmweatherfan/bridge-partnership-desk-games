@@ -2542,8 +2542,8 @@ function checkRegReady(){
 }
 
 function confirmRegistration(club,date,sk){
-  if(!window._regPartnerUid&&!window._regTable){showToast('Please select a partner and a seat to continue.');return;}
-  if(!window._regPartnerUid){showToast('Please select a partner to continue.');return;}
+  if(!window._regPartnerUid&&!window._regTable){alert('Please select a partner and a seat to continue.');return;}
+  if(!window._regPartnerUid){alert('Please select a partner to continue.');return;}
   if(!window._regTable||!window._regSeat){showToast('Please select a table and seat to continue.');return;}
   var pair={N:'S',S:'N',E:'W',W:'E'};
   var pairData={
