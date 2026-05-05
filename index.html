@@ -1026,8 +1026,7 @@ function setTab(t){
 }
 
 function doSetTab(t){
-  _profileDirty=false;
-  tab=t;renderTabBar();
+  _profileDirty=false;window._cmDirty=false;
   if(t==="browse"){browseFilters={skills:[],venue:"",date:"",session:"",role:"",system:"",anySkill:false};browseCalY=0;browseCalM=0;renderBrowse();}
   if(t==="messages")renderMessages();
   if(t==="profile"){_profileDirty=false;renderProfile();}
