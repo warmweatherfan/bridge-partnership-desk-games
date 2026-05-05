@@ -2185,7 +2185,23 @@ function renderClubManager(){
 
 function cmSwitchClub(club){
   if(window._cmDirty){
-    if(!confirm("You have unsaved changes. Discard them and switch clubs?"))return;
+    window._cmPendingClub=club;
+    showUnsavedModal(function(){
+      // Save
+      cmSave().then(function(){
+        window._cmClub=window._cmPendingClub;
+        window._cmDirty=false;
+        window._cmTableData={};
+        renderClubManager();
+      });
+    },function(){
+      // Discard
+      window._cmClub=window._cmPendingClub;
+      window._cmDirty=false;
+      window._cmTableData={};
+      renderClubManager();
+    });
+    return;
   }
   window._cmClub=club;
   window._cmDirty=false;
