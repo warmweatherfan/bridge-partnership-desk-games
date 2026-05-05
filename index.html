@@ -2223,26 +2223,6 @@ function renderGames(){
       return sessReg.tables>0;
     });
 
-  // Get sessions for selected club over next 4 weeks
-  var today=new Date();today.setHours(0,0,0,0);
-  var sched=CLUB_SCHEDULES[selectedClub]||{};
-  var sessions=[];
-
-  for(var d=0;d<28;d++){
-    var dt=new Date(today);
-    dt.setDate(today.getDate()+d);
-    var dow=dt.getDay();
-    var daySessions=sched[dow]||[];
-    if(daySessions.length>0){
-      var mm=dt.getMonth()+1;
-      var dd=dt.getDate();
-      var dateStr=dt.getFullYear()+'-'+(mm<10?'0'+mm:mm)+'-'+(dd<10?'0'+dd:dd);
-      daySessions.forEach(function(sess){
-        sessions.push({date:dateStr,session:sess,dateObj:new Date(dt)});
-      });
-    }
-  }
-
   if(sessions.length===0){
     h+='<div class="form-box" style="text-align:center;color:var(--tl);font-style:italic;padding:32px">No upcoming sessions found for '+selectedClub+'.</div>';
   } else {
