@@ -2302,9 +2302,8 @@ function showRegistrationForm(btn){
     h+='<input class="finput" id="reg-partner-search" type="text" placeholder="Type partner name..." oninput="filterRegPartners(this.value)" style="margin-bottom:8px"/>';
     h+='<div id="reg-partner-list" style="max-height:180px;overflow-y:auto;border:1px solid #d0c8b8;border-radius:6px;background:#fefcf8">';
     players.filter(function(p){return p.uid!==me.uid;}).forEach(function(p){
-      h+='<div class="reg-partner-item" data-uid="'+p.uid+'" data-name="'+p.displayName+'" onclick="selectRegPartner(this)" ';
-      h+='<div class="reg-partner-item" data-uid="'+p.uid+'" data-name="'+p.displayName+'" onclick="selectRegPartner(this)" ';
-      h+='style="padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #e8e0d0;color:#2a2a2a;background:#fefcf8">'; 
+      h+='<div class="reg-partner-item" data-uid="'+p.uid+'" data-name="'+p.displayName+'" onclick="selectRegPartner(this)" style="padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #e8e0d0;color:#2a2a2a;background:#fefcf8">';
+      h+=p.displayName+(p.skill?' — '+p.skill:'')+(p.masterpoints?' — '+p.masterpoints+' MPs':'');
       h+='</div>';
     });
     h+='</div>';
