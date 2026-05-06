@@ -2169,6 +2169,7 @@ function renderClubManager(){
   // Club selector if managing multiple clubs
   var selectedClub=window._cmClub||myClubs[0];
   window._cmClub=selectedClub;
+  if(window.cmShowAll===undefined)window.cmShowAll=false;
   // Do NOT reset _cmDirty here - it must persist across renders
   window._cmTableData={};
 
@@ -2308,7 +2309,7 @@ function cmLoadSessions(club){
     }
     results.forEach(function(r){
       var inputId='cm_'+r.date+'_'+r.sKey;
-      if(r.tables===0)return; // skip unconfigured sessions
+      if(r.tables===0&&!window.cmShowAll)return; // skip unconfigured sessions unless show all
       h+='<tr style="border-bottom:1px solid #e0d0c0;background:#fefcf8">';
       h+='<td style="padding:10px 8px;color:#1a1a1a;font-weight:600;font-size:13px">'+formatDateLong(r.date)+'</td>';
       h+='<td style="padding:10px 8px;color:#3a3a3a;font-size:13px">'+r.session+'</td>';
