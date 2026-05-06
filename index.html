@@ -2315,6 +2315,73 @@ function cmLoadSessions(club){
       h+='</tr>';
     });
     h+='</table>';
+
+    // Registration view
+    h+='<div style="margin-top:20px">';
+    h+='<div style="font-size:14px;font-weight:700;color:#2a2a2a;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #d0c0a0">Current Registrations</div>';
+
+    results.forEach(function(r){
+      if(r.tables===0)return;
+      var pairs=r.pairs?Object.values(r.pairs):[];
+      var waitlist=r.waitlist?Object.values(r.waitlist):[];
+      var maxPairs=r.tables*2;
+      var pairKeys=r.pairs?Object.keys(r.pairs):[];
+
+      h+='<div style="margin-bottom:20px;background:#fefcf8;border:1px solid #d0c0a0;border-radius:8px;padding:14px">';
+      h+='<div style="font-weight:700;font-size:13px;color:#1a1a1a;margin-bottom:4px">'+formatDateLong(r.date)+' — '+r.session+'</div>';
+      h+='<div style="font-size:12px;color:#7a6a50;margin-bottom:10px">'+pairs.length+' of '+maxPairs+' pairs registered</div>';
+
+      if(pairs.length===0){
+        h+='<div style="font-size:13px;color:#aaa;font-style:italic;padding:8px 0">No registrations yet.</div>';
+      } else {
+        var byTable={};
+        pairs.forEach(function(pair,idx){
+          if(!byTable[pair.table])byTable[pair.table]={NS:null,EW:null,NSkey:null,EWkey:null};
+          if(pair.direction==="N/S"){byTable[pair.table].NS=pair;byTable[pair.table].NSkey=pairKeys[idx];}
+          else{byTable[pair.table].EW=pair;byTable[pair.table].EWkey=pairKeys[idx];}
+        });
+
+        h+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+        h+='<tr style="background:#f0e8d8"><th style="padding:6px 8px;text-align:left">Table</th>';
+        h+='<th style="padding:6px 8px;text-align:left">Dir</th>';
+        h+='<th style="padding:6px 8px;text-align:left">Players</th>';
+        h+='<th style="padding:6px 8px;text-align:center">Action</th></tr>';
+
+        for(var t=1;t<=r.tables;t++){
+          var td=byTable[t]||{NS:null,EW:null,NSkey:null,EWkey:null};
+          [["NS","N/S","NSkey"],["EW","E/W","EWkey"]].forEach(function(d){
+            var pair=td[d[0]];
+            var pairKey=td[d[2]];
+            var p1=pair?players.find(function(p){return p.uid===pair.player1uid;})||{}:{};
+            var p2=pair?players.find(function(p){return p.uid===pair.player2uid;})||{}:{};
+            h+='<tr style="border-bottom:1px solid #e8e0d0">';
+            h+='<td style="padding:8px;font-weight:700;color:#1a1a1a">'+t+'</td>';
+            h+='<td style="padding:8px;color:#3a3a3a">'+d[1]+'</td>';
+            if(pair){
+              h+='<td style="padding:8px;color:#1a1a1a"><div>'+pair.player1name+(p1.phone?' <a href="tel:'+p1.phone+'" style="color:#b8860b">'+p1.phone+'</a>':'')+'</div>';
+              h+='<div>'+pair.player2name+(p2.phone?' <a href="tel:'+p2.phone+'" style="color:#b8860b">'+p2.phone+'</a>':'')+'</div></td>';
+              h+='<td style="padding:8px;text-align:center"><button style="padding:3px 10px;font-size:11px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer" ';
+              h+='data-club="'+club+'" data-date="'+r.date+'" data-sk="'+r.sKey+'" data-pairid="'+pairKey+'" ';
+              h+='data-p1name="'+pair.player1name+'" data-p2name="'+pair.player2name+'" ';
+              h+='onclick="cmCancelReg(this)">Cancel</button></td>';
+            } else {
+              h+='<td style="padding:8px;color:#aaa;font-style:italic">Available</td><td></td>';
+            }
+            h+='</tr>';
+          });
+        }
+        h+='</table>';
+      }
+
+      if(waitlist.length>0){
+        h+='<div style="margin-top:10px;font-size:12px;font-weight:700;color:#2a2a2a">Waitlist ('+waitlist.length+')</div>';
+        waitlist.forEach(function(w,idx){
+          h+='<div style="font-size:12px;color:#3a3a3a;padding:4px 0">'+(idx+1)+'. '+w.player1name+' / '+w.player2name+'</div>';
+        });
+      }
+      h+='</div>';
+    });
+    h+='</div>';
     el.innerHTML=h;
   });
 }
