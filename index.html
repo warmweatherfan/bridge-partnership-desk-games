@@ -2212,10 +2212,31 @@ function cmCancelReg(btn){
   var pairId=btn.getAttribute('data-pairid');
   var p1name=btn.getAttribute('data-p1name');
   var p2name=btn.getAttribute('data-p2name');
+  var p1uid=btn.getAttribute('data-p1uid');
+  var p2uid=btn.getAttribute('data-p2uid');
+  var p1email=btn.getAttribute('data-p1email');
+  var p2email=btn.getAttribute('data-p2email');
   if(!confirm('Cancel registration for '+p1name+' / '+p2name+'?'))return;
+
+  var msgText='Your registration for the game at '+club+' on '+formatDateLong(date)+
+    ' ('+sk.replace(/_/g,' ')+') has been cancelled by the club manager.'+
+    ' Please contact the club if you have any questions.';
+
+  // Send emails immediately (in user gesture context)
+  var emailsSent=false;
+  if(p1email){
+    window.open('mailto:'+p1email+'?subject=Registration Cancelled — '+club+' '+formatDateLong(date)+'&body='+encodeURIComponent(msgText));
+    emailsSent=true;
+  }
+  if(p2email){
+    window.open('mailto:'+p2email+'?subject=Registration Cancelled — '+club+' '+formatDateLong(date)+'&body='+encodeURIComponent(msgText));
+  }
+
   dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs/'+pairId).remove().then(function(){
-    showToast('Registration cancelled for '+p1name+' / '+p2name);
-    // Reload sessions
+    // Send in-app messages to players without email
+    if(!p1email&&p1uid)sendMessage(p1uid,msgText,null);
+    if(!p2email&&p2uid)sendMessage(p2uid,msgText,null);
+    showToast('Registration cancelled. Players have been notified.');
     cmLoadSessions(club);
   }).catch(function(e){alert('Error: '+e.message);});
 }
