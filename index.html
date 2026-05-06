@@ -2382,6 +2382,87 @@ function cmLoadSessions(club){
       h+='</div>';
     });
     h+='</div>';
+
+    // Looking for a Partner section
+    h+='<div style="margin-top:20px">';
+    h+='<div style="font-size:14px;font-weight:700;color:#2a2a2a;margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid #d0c0a0">&#128269; Looking for a Partner</div>';
+
+    results.forEach(function(r){
+      // Show LFP for all sessions regardless of table limit
+      var regPairs=r.pairs?Object.values(r.pairs):[];
+      var registeredUids={};
+      regPairs.forEach(function(pair){
+        registeredUids[pair.player1uid]=true;
+        registeredUids[pair.player2uid]=true;
+      });
+
+      // Find players who have this club and date/session in their profile but are not registered
+      var seekers=players.filter(function(p){
+        if(registeredUids[p.uid])return false; // already registered
+        if(!p.venues||!p.venues[club])return false; // no venue
+        var vdata=p.venues[club];
+        // Check if they have this date selected
+        var hasDates=false;
+        if(typeof vdata==='object'&&!Array.isArray(vdata)){
+          if(vdata[r.date]){
+            // Check if they have this session
+            var sessArr=vdata[r.date];
+            if(Array.isArray(sessArr)){
+              hasDates=sessArr.some(function(s){return safeKey(s)===r.sKey;});
+            }
+          }
+        }
+        return hasDates;
+      });
+
+      if(seekers.length===0)return;
+
+      h+='<div style="margin-bottom:16px;background:#fefcf8;border:1px solid #d0c0a0;border-radius:8px;padding:14px">';
+      h+='<div style="font-weight:700;font-size:13px;color:#1a1a1a;margin-bottom:8px">'+formatDateLong(r.date)+' — '+r.session+'</div>';
+      h+='<div style="font-size:12px;color:#7a6a50;margin-bottom:10px">'+seekers.length+' player'+(seekers.length===1?'':'s')+' seeking a partner</div>';
+
+      seekers.forEach(function(p){
+        h+='<div style="padding:8px 0;border-bottom:1px solid #e8e0d0;display:flex;justify-content:space-between;align-items:center">';
+        h+='<div>';
+        h+='<div style="font-size:13px;font-weight:700;color:#1a1a1a">'+p.displayName+'</div>';
+        h+='<div style="font-size:12px;color:#3a3a3a">';
+        if(p.skill)h+=p.skill;
+        if(p.masterpoints)h+=' — '+p.masterpoints+' MPs';
+        var sys=(p.systems&&p.systems.length)?p.systems.join(', '):(p.system||'');
+        if(sys&&sys!=='Standard American')h+=' — '+sys;
+        h+='</div>';
+        h+='</div>';
+        h+='<div style="text-align:right;font-size:12px">';
+        if(p.phone)h+='<a href="tel:'+p.phone+'" style="color:#b8860b;display:block">&#128222; '+p.phone+'</a>';
+        if(p.contactEmail)h+='<a href="mailto:'+p.contactEmail+'" style="color:#b8860b;display:block">&#128231; '+p.contactEmail+'</a>';
+        h+='</div>';
+        h+='</div>';
+      });
+
+      h+='</div>';
+    });
+
+    if(results.every(function(r){
+      if(r.tables===0)return true;
+      var regPairs=r.pairs?Object.values(r.pairs):[];
+      var registeredUids={};
+      regPairs.forEach(function(pair){registeredUids[pair.player1uid]=true;registeredUids[pair.player2uid]=true;});
+      return players.filter(function(p){
+        if(registeredUids[p.uid])return false;
+        if(!p.venues||!p.venues[club])return false;
+        var vdata=p.venues[club];
+        if(typeof vdata==='object'&&!Array.isArray(vdata)){
+          if(vdata[r.date]){
+            var sessArr=vdata[r.date];
+            if(Array.isArray(sessArr)){return sessArr.some(function(s){return safeKey(s)===r.sKey;});}
+          }
+        }
+        return false;
+      }).length===0;
+    })){
+      h+='<div style="font-size:13px;color:#aaa;font-style:italic;padding:8px 0">No players currently seeking a partner for these sessions.</div>';
+    }
+    h+='</div>';
     el.innerHTML=h;
   });
 }
