@@ -2306,8 +2306,8 @@ function cmLoadSessions(club){
       h+='<td style="padding:10px 8px;color:#1a1a1a;font-weight:600;font-size:13px">'+formatDateLong(r.date)+'</td>';
       h+='<td style="padding:10px 8px;color:#3a3a3a;font-size:13px">'+r.session+'</td>';
       h+='<td style="padding:10px 8px;text-align:center">';
-      h+='<input type="number" min="0" max="30" id="'+inputId+'" value="'+r.tables+'" ';
-      h+='<input type="number" min="0" max="30" id="'+inputId+'" value="'+r.tables+'" ';
+      h+='<input type="number" min="0" max="30" id="'+inputId+'" value="'+(r.tables||'')+'" placeholder="0" ';
+      h+='<input type="number" min="0" max="30" id="'+inputId+'" value="'+(r.tables||'')+'" placeholder="0" ';
       h+='oninput="cmMarkDirty(this)" ';
       h+='style="width:60px;text-align:center;font-size:14px;padding:6px;border:2px solid #c0a060;border-radius:6px;background:#fefcf8;color:#1a1a1a;font-weight:700"/>';
       h+='style="width:60px;text-align:center;font-size:14px;padding:6px;border:2px solid #c0a060;border-radius:6px;background:#fefcf8;color:#1a1a1a;font-weight:700"/>';
