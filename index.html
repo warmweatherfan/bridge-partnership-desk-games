@@ -1008,7 +1008,7 @@ function filterVenuePills(){
 function markDirty(){_profileDirty=true;}
 
 function setTab(t){
-function setTab(t){
+  if(tab==="profile"&&_profileDirty&&t!=="profile"){
     showUnsavedModal(t);
     return;
   }
