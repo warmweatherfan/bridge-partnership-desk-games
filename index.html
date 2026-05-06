@@ -2204,6 +2204,21 @@ function renderClubManager(){
   cmLoadSessions(selectedClub);
 }
 
+function cmCancelReg(btn){
+  var club=btn.getAttribute('data-club');
+  var date=btn.getAttribute('data-date');
+  var sk=btn.getAttribute('data-sk');
+  var pairId=btn.getAttribute('data-pairid');
+  var p1name=btn.getAttribute('data-p1name');
+  var p2name=btn.getAttribute('data-p2name');
+  if(!confirm('Cancel registration for '+p1name+' / '+p2name+'?'))return;
+  dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs/'+pairId).remove().then(function(){
+    showToast('Registration cancelled for '+p1name+' / '+p2name);
+    // Reload sessions
+    cmLoadSessions(club);
+  }).catch(function(e){alert('Error: '+e.message);});
+}
+
 function cmMarkDirty(inp){
   window._cmDirty=true;
   inp.style.background='#fff9e6';
@@ -2266,13 +2281,14 @@ function cmLoadSessions(club){
   // Load all table counts then render
   var promises=sessions.map(function(s){
     var sKey=safeKey(s.session);
-    return dbRef('registrations/'+safeName(club)+'/'+s.date+'/'+sKey+'/tables').once('value').then(function(snap){
-      return {date:s.date,session:s.session,sKey:sKey,tables:snap.exists()?snap.val():0};
+    return dbRef('registrations/'+safeName(club)+'/'+s.date+'/'+sKey).once('value').then(function(snap){
+      var data=snap.exists()?snap.val():{};
+      return {date:s.date,session:s.session,sKey:sKey,tables:data.tables||0,pairs:data.pairs||null,waitlist:data.waitlist||null};
     });
   });
 
   Promise.all(promises).then(function(results){
-    // Store initial values
+    // Store initial table values only
     results.forEach(function(r){
       window._cmTableData[r.date+'_'+r.sKey]=r.tables;
     });
