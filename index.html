@@ -2169,7 +2169,7 @@ function renderClubManager(){
   // Club selector if managing multiple clubs
   var selectedClub=window._cmClub||myClubs[0];
   window._cmClub=selectedClub;
-  if(window.cmShowAll===undefined)window.cmShowAll=false;
+  window.cmShowAll=false; // Always reset to hidden on tab open
   // Do NOT reset _cmDirty here - it must persist across renders
   window._cmTableData={};
 
