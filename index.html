@@ -1009,7 +1009,6 @@ function markDirty(){_profileDirty=true;}
 
 function setTab(t){
 function setTab(t){
-  alert('setTab: tab='+tab+' t='+t+' dirty='+_profileDirty);
     showUnsavedModal(t);
     return;
   }
@@ -1021,6 +1020,7 @@ function setTab(t){
 }
 
 function doSetTab(t){
+  tab=t;renderTabBar();
   _profileDirty=false;
   if(t==="browse"){browseFilters={skills:[],venue:"",date:"",session:"",role:"",system:"",anySkill:false};browseCalY=0;browseCalM=0;renderBrowse();}
   if(t==="messages")renderMessages();
