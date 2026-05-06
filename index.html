@@ -2300,8 +2300,15 @@ function cmLoadSessions(club){
     h+='<th style="text-align:center;padding:10px 8px;color:#2a2a2a;font-weight:700">Tables</th>';
     h+='</tr>';
 
+    var limitedResults=results.filter(function(r){return r.tables>0;});
+    var unlimitedCount=results.length-limitedResults.length;
+
+    if(limitedResults.length===0){
+      h+='<tr><td colspan="3" style="padding:12px 8px;color:#888;font-style:italic">No table limits configured yet.</td></tr>';
+    }
     results.forEach(function(r){
       var inputId='cm_'+r.date+'_'+r.sKey;
+      if(r.tables===0)return; // skip unconfigured sessions
       h+='<tr style="border-bottom:1px solid #e0d0c0;background:#fefcf8">';
       h+='<td style="padding:10px 8px;color:#1a1a1a;font-weight:600;font-size:13px">'+formatDateLong(r.date)+'</td>';
       h+='<td style="padding:10px 8px;color:#3a3a3a;font-size:13px">'+r.session+'</td>';
@@ -2315,6 +2322,9 @@ function cmLoadSessions(club){
       h+='</tr>';
     });
     h+='</table>';
+    if(unlimitedCount>0){
+      h+='<div style="font-size:12px;color:#aaa;margin-top:8px;font-style:italic">'+unlimitedCount+' session'+(unlimitedCount===1?'':'s')+' with no table limit not shown. <span style="cursor:pointer;text-decoration:underline" onclick="cmShowAll=!cmShowAll;cmLoadSessions(window._cmClub)">Show all</span></div>';
+    }
 
     // Registration view
     h+='<div style="margin-top:20px">';
