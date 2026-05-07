@@ -2820,7 +2820,7 @@ function showRegistrationForm(btn){
         var label=taken?'\u2715':seat;
         var cursor=taken?'not-allowed':'pointer';
         var onclick=taken?'':'selectSeat(this)';
-        h+='<div data-table="'+t+'" data-seat="'+seat+'" onclick="'+onclick+'" ';
+        h+='<div data-table="'+t+'" data-seat="'+seat+'" data-taken="'+(taken?'1':'0')+'" onclick="'+onclick+'" ';
         h+='style="position:absolute;top:'+pos.top+';left:'+pos.left+';width:28px;height:28px;';
         h+='background:'+bgColor+';border-radius:50%;display:flex;align-items:center;justify-content:center;';
         h+='font-size:11px;font-weight:700;color:white;cursor:'+cursor+';border:2px solid '+borderColor+'">'+label+'</div>';
@@ -2877,13 +2877,14 @@ function selectRegPartner(el){
 }
 
 function selectSeat(el){
-  // Deselect all seats
+  // Reset all available seats back to green
   document.querySelectorAll('[data-seat]').forEach(function(s){
-    if(!s.title.includes('Click to take'))return; // skip taken seats
-    s.style.border='2px solid var(--gold)';
-    s.style.background='rgba(201,168,76,0.8)';
+    if(s.getAttribute('data-taken')==='1')return; // skip taken seats
+    s.style.background='#27ae60';
+    s.style.border='2px solid #1e8449';
+    s.textContent=s.getAttribute('data-seat');
   });
-  // Highlight selected seat and its pair
+  // Highlight selected seat and its pair in gold
   var seat=el.getAttribute('data-seat');
   var table=el.getAttribute('data-table');
   var pair={N:'S',S:'N',E:'W',W:'E'};
@@ -2891,12 +2892,12 @@ function selectSeat(el){
   window._regSeat=seat;
   window._regSeatPair=pair[seat];
 
-  // Highlight both seats in the direction
+  // Highlight both seats in the direction gold
   document.querySelectorAll('[data-seat][data-table="'+table+'"]').forEach(function(s){
     var s2=s.getAttribute('data-seat');
     if(s2===seat||s2===pair[seat]){
-      s.style.background='rgba(39,174,96,0.9)';
-      s.style.border='2px solid #27ae60';
+      s.style.background='#f39c12';
+      s.style.border='2px solid #d68910';
     }
   });
 
@@ -2956,7 +2957,7 @@ function clearRegPartner(){
 function clearRegSeat(){
   window._regTable=null;window._regSeat=null;window._regSeatPair=null;
   document.querySelectorAll('[data-seat]').forEach(function(s){
-    if(s.style.cursor!=='not-allowed'){s.style.background='rgba(201,168,76,0.8)';s.style.border='2px solid var(--gold)';}
+    if(s.getAttribute('data-taken')!=='1'){s.style.background='#27ae60';s.style.border='2px solid #1e8449';s.textContent=s.getAttribute('data-seat');}
   });
   var sel=document.getElementById('reg-seat-selected');
   if(sel)sel.style.display='none';
