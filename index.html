@@ -208,7 +208,7 @@
   textarea.finput{resize:vertical;min-height:85px}
 
   /* ── Messages ── */
-  .thread-list{background:#fefcf8;border-radius:10px;border:1px solid #d0c0a0;overflow:hidden;margin-bottom:12px;max-height:190px;overflow-y:auto}
+  .thread-list{background:rgba(10,24,18,0.7);border-radius:8px;border:1px solid rgba(201,168,76,0.2);margin-bottom:14px;max-height:190px;overflow-y:auto}
   .thread-item{padding:12px 16px;border-bottom:1px solid rgba(122,98,48,0.15);cursor:pointer;transition:background 0.15s}
   .thread-item:hover{background:rgba(201,168,76,0.07)}
   .thread-item.active{background:rgba(201,168,76,0.12)}
@@ -1658,7 +1658,8 @@ function renderMessages(){
   }
   h+='<div class="thread-list">';
   if(!tList.length)h+='<div style="padding:16px 14px;color:#5a4a30;font-size:13px;font-style:italic">No conversations yet.</div>';
-  else tList.forEach(function(t){h+='<div class="thread-item"'+(activeThread===t.uid?' active':'')+(t.unread>0?' thread-unread':'')+' onclick="pickThread(\''+t.uid+'\')">'+'<div class="thread-name">'+t.name+'</div>'+'<div class="thread-preview">'+(t.unread>0?'<strong>':'')+(t.last.text||'').slice(0,40)+(t.unread>0?'</strong>':'')+'</div></div>';});
+  if(!tList.length)h+='<div style="padding:16px 14px;color:var(--tl);font-size:13px;font-style:italic">No conversations yet.</div>';
+  else tList.forEach(function(t){h+='<div class="thread-item'+(activeThread===t.uid?' active':'')+(t.unread>0?' thread-unread':'')+'\'  onclick="pickThread(\''+t.uid+'\')">'+'<div class="thread-name">'+t.player.displayName+'</div>'+'<div class="thread-preview">'+(t.unread>0?'<strong>':'')+(t.last&&t.last.text?t.last.text.slice(0,40):'')+(t.unread>0?'</strong>':'')+'</div></div>';});
   if(!activeThread){
     h+='<div style="text-align:center;color:var(--cream);opacity:0.3;font-style:italic;padding:16px 0">Select a conversation or tap New</div>';
   } else {
