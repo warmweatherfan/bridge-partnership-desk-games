@@ -1737,7 +1737,7 @@ function renderProfile(){
           delete _venueState[v];
           delete _sessionState[v];
           delete _teamPrefState[v];
-          markDirty();
+          // Don't call markDirty() here - this is automatic cleanup, not user action
         } else {
           _venueState[v]=allDatesR;
           var filteredSess={};
@@ -2396,7 +2396,8 @@ function cmLoadSessions(club){
               h+='<td style="padding:8px;text-align:center"><button style="padding:3px 10px;font-size:11px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer" ';
               h+='data-club="'+club+'" data-date="'+r.date+'" data-sk="'+r.sKey+'" data-pairid="'+pairKey+'" ';
               h+='data-p1name="'+pair.player1name+'" data-p2name="'+pair.player2name+'" ';
-              h+='onclick="cmCancelReg(this)">Cancel</button></td>';
+              h+='data-p1uid="'+pair.player1uid+'" data-p2uid="'+pair.player2uid+'" ';
+              h+='data-p1email="'+(p1.contactEmail||'')+'" data-p2email="'+(p2.contactEmail||'')+'" ';
             } else {
               h+='<td style="padding:8px;color:#aaa;font-style:italic">Available</td><td></td>';
             }
