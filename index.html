@@ -2238,7 +2238,7 @@ function cmCancelReg(btn){
     if(!p1email&&p1uid)sendMessage(p1uid,msgText,null);
     if(!p2email&&p2uid)sendMessage(p2uid,msgText,null);
     showToast('Registration cancelled. Players have been notified.');
-    cmLoadSessions(club);
+    setTimeout(function(){cmLoadSessions(club);},500);
   }).catch(function(e){alert('Error: '+e.message);});
 }
 
@@ -2393,12 +2393,13 @@ function cmLoadSessions(club){
             if(pair){
               h+='<td style="padding:8px;color:#1a1a1a"><div>'+pair.player1name+(p1.phone?' <a href="tel:'+p1.phone+'" style="color:#b8860b">'+p1.phone+'</a>':'')+'</div>';
               h+='<div>'+pair.player2name+(p2.phone?' <a href="tel:'+p2.phone+'" style="color:#b8860b">'+p2.phone+'</a>':'')+'</div></td>';
-              h+='<td style="padding:8px;text-align:center"><button style="padding:3px 10px;font-size:11px;background:#c0392b;color:white;border:none;border-radius:4px;cursor:pointer" ';
+              h+='<td style="padding:8px;text-align:center">';
+              h+='<button class="btn btn-red" style="margin-top:0;padding:6px 12px;font-size:12px" ';
               h+='data-club="'+club+'" data-date="'+r.date+'" data-sk="'+r.sKey+'" data-pairid="'+pairKey+'" ';
               h+='data-p1name="'+pair.player1name+'" data-p2name="'+pair.player2name+'" ';
               h+='data-p1uid="'+pair.player1uid+'" data-p2uid="'+pair.player2uid+'" ';
               h+='data-p1email="'+(p1.contactEmail||'')+'" data-p2email="'+(p2.contactEmail||'')+'" ';
-            } else {
+              h+='onclick="cmCancelReg(this)">Cancel Registration</button></td>';
               h+='<td style="padding:8px;color:#aaa;font-style:italic">Available</td><td></td>';
             }
             h+='</tr>';
