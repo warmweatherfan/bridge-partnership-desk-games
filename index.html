@@ -2811,20 +2811,19 @@ function showRegistrationForm(btn){
         E:{top:'35px',left:'70px'},
         W:{top:'35px',left:'0px'}
       };
-      var seatColors={N:'#2980b9',S:'#2980b9',E:'#27ae60',W:'#27ae60'};
 
       seats.forEach(function(seat){
         var taken=takenSeats[t+'_'+seat];
         var pos=seatPos[seat];
-        var bgColor=taken?'rgba(100,100,100,0.5)':'rgba(201,168,76,0.8)';
+        var bgColor=taken?'#c0392b':'#27ae60';
+        var borderColor=taken?'#922b21':'#1e8449';
+        var label=taken?'\u2715':seat;
         var cursor=taken?'not-allowed':'pointer';
-        var title=taken?taken:'Click to take '+seat+' seat';
-        h+='<div data-table="'+t+'" data-seat="'+seat+'" data-club="'+club+'" data-date="'+date+'" data-sk="'+sk+'" ';
-        h+='onclick="'+(taken?'':'selectSeat(this)')+'" ';
-        h+='title="'+title+'" ';
+        var onclick=taken?'':'selectSeat(this)';
+        h+='<div data-table="'+t+'" data-seat="'+seat+'" onclick="'+onclick+'" ';
         h+='style="position:absolute;top:'+pos.top+';left:'+pos.left+';width:28px;height:28px;';
         h+='background:'+bgColor+';border-radius:50%;display:flex;align-items:center;justify-content:center;';
-        h+='font-size:11px;font-weight:700;color:white;cursor:'+cursor+';border:2px solid '+(taken?'#666':'var(--gold)')+'">'+seat+'</div>';
+        h+='font-size:11px;font-weight:700;color:white;cursor:'+cursor+';border:2px solid '+borderColor+'">'+label+'</div>';
       });
       h+='</div>';
       h+='</div>';
@@ -2989,6 +2988,17 @@ function confirmRegistration(club,date,sk){
   if(!window._regPartnerUid&&!window._regTable){alert('Please select a partner and a seat to continue.');return;}
   if(!window._regPartnerUid){alert('Please select a partner to continue.');return;}
   if(!window._regTable||!window._regSeat){showToast('Please select a table and seat to continue.');return;}
+  // Check if partner is already registered
+  dbRef('registrations/'+safeName(club)+'/'+date+'/'+sk+'/pairs').once('value').then(function(psnap){
+    if(psnap.exists()){
+      var existingPairs=Object.values(psnap.val());
+      var partnerTaken=existingPairs.some(function(p){return p.player1uid===window._regPartnerUid||p.player2uid===window._regPartnerUid;});
+      if(partnerTaken){showToast(window._regPartnerName+' is already registered for this game.');return;}
+    }
+    doConfirmReg(club,date,sk);
+  });
+}
+function doConfirmReg(club,date,sk){
   var pair={N:'S',S:'N',E:'W',W:'E'};
   var pairData={
     player1uid:me.uid,
