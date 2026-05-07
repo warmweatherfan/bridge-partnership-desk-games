@@ -2689,9 +2689,15 @@ function renderGames(){
       h+='</div>';
       h+='<div style="text-align:right">';
       h+=statusHtml;
-      var btnDisabled=avail<=0?'disabled':'';
+      // Check if current player is already registered for this session
+      var sessReg2=clubReg[s.date]&&clubReg[s.date][sKey]?clubReg[s.date][sKey]:{};
+      var sessP2=sessReg2.pairs?Object.values(sessReg2.pairs):[];
+      var alreadyReg=sessP2.some(function(p){return p.player1uid===me.uid||p.player2uid===me.uid;});
+      var btnDisabled=avail<=0||alreadyReg?'disabled':'';
+      var btnLabel=alreadyReg?'Registered ✓':avail<=0?'Full':'Register';
+      var btnStyle=alreadyReg?'background:var(--felt);border:1px solid var(--gold);color:var(--gold)':'';
       var btnData='data-club="'+selectedClub+'" data-date="'+s.date+'" data-sk="'+sKey+'" data-tables="'+tables+'"';
-      h+='<br><button class="btn btn-gold" style="margin-top:6px;padding:6px 14px;font-size:12px" '+btnDisabled+' '+btnData+' onclick="showRegistrationForm(this)">Register</button>';
+      h+='<br><button class="btn btn-gold" style="margin-top:6px;padding:6px 14px;font-size:12px;'+btnStyle+'" '+btnDisabled+' '+btnData+' onclick="showRegistrationForm(this)">'+btnLabel+'</button>';
       h+='</div>';
       h+='</div>';
       h+='</div>';
@@ -2823,6 +2829,11 @@ function showRegistrationForm(btn){
       h+='</div>';
       h+='</div>';
     }
+    h+='</div>';
+    h+='<div style="display:flex;gap:12px;margin-top:8px;margin-bottom:4px;font-size:11px">';
+    h+='<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;background:#27ae60;border-radius:50%;display:inline-block"></span> Available</span>';
+    h+='<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;background:#c0392b;border-radius:50%;display:inline-block"></span> Taken</span>';
+    h+='<span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:14px;background:#27ae60;border:2px solid #f39c12;border-radius:50%;display:inline-block"></span> Your selection</span>';
     h+='</div>';
     h+='<div id="reg-seat-selected" style="margin-top:8px;font-size:13px;color:var(--green);display:none"><span id="reg-seat-text"></span> <button onclick="clearRegSeat()" style="background:transparent;border:none;color:var(--tl);font-size:11px;cursor:pointer;text-decoration:underline">Change</button></div>';
     h+='</div>';
