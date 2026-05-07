@@ -208,7 +208,7 @@
   textarea.finput{resize:vertical;min-height:85px}
 
   /* ── Messages ── */
-  .thread-list{background:rgba(10,24,18,0.7);border-radius:8px;border:1px solid rgba(201,168,76,0.2);margin-bottom:14px;max-height:190px;overflow-y:auto}
+  .thread-list{background:#fefcf8;border-radius:10px;border:1px solid #d0c0a0;overflow:hidden;margin-bottom:12px;background:rgba(10,24,18,0.7);border-radius:8px;border:1px solid rgba(201,168,76,0.2);margin-bottom:14px;max-height:190px;overflow-y:auto}
   .thread-item{padding:12px 16px;border-bottom:1px solid rgba(122,98,48,0.15);cursor:pointer;transition:background 0.15s}
   .thread-item:hover{background:rgba(201,168,76,0.07)}
   .thread-item.active{background:rgba(201,168,76,0.12)}
@@ -1463,23 +1463,24 @@ function renderBrowse(){
     h+='<div class="banner ok" style="margin-bottom:8px">Browsing as guest &nbsp; <span style="cursor:pointer;text-decoration:underline;font-size:12px" onclick="renderLogin()">Sign in</span></div>';
   }
   
+  h+='<div class="form-box" style="margin-bottom:16px">';
   // Email results field
   h+='<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;background:rgba(10,24,18,0.6);padding:10px;border-radius:6px;border:1px solid var(--gold-dim)">';
   h+='<input class="finput" id="email-results-addr" placeholder="Email results to..." style="flex:1;font-size:13px;padding:8px 10px"/>';
   h+='<button class="btn" style="margin-top:0;white-space:nowrap" onclick="emailResults()">&#128231; Send</button>';
   h+='</div>';
-  h+='<div style="margin-bottom:6px;font-size:12px;color:var(--cream);opacity:0.6">Filter by skill level:</div>';
+  h+='<div style="margin-bottom:6px;font-size:12px;color:#5a4a30;font-weight:600">Filter by skill level:</div>';
   h+='<div class="skill-pills">';
   h+='<span class="skill-pill'+(browseFilters.skills.length===0?' on':'')+'" onclick="clearSkillFilter()">Any Skill Level</span>';
   SKILL_LEVELS.forEach(function(s){var on=browseFilters.skills.indexOf(s)>=0;h+='<span class="skill-pill'+(on?' on':'')+'" data-s="'+s+'" onclick="skillFilterEl(this)">'+s+'</span>';});
   h+='</div>';
-  h+='<div style="margin-top:10px;margin-bottom:6px;font-size:12px;color:var(--cream);opacity:0.6">Filter by date'+(browseFilters.date?' <span style="color:var(--gold);font-size:13px">— '+fmtDate(browseFilters.date)+'</span> <button onclick="clearDateFilter()" style="background:var(--red);color:white;border:none;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:Georgia,serif;margin-left:6px">Clear</button>':"")+':</div>';
+  h+='<div style="margin-top:10px;margin-bottom:6px;font-size:12px;color:#5a4a30;font-weight:600">Filter by date'+(browseFilters.date?' <span style="color:var(--gold);font-size:13px">— '+fmtDate(browseFilters.date)+'</span> <button onclick="clearDateFilter()" style="background:var(--red);color:white;border:none;border-radius:4px;padding:3px 10px;font-size:12px;cursor:pointer;font-family:Georgia,serif;margin-left:6px">Clear</button>':"")+':</div>';
   h+='<div id="bcal">'+renderBrowseCal()+'</div>';
   h+='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;margin-top:8px">';
-  h+='<div style="font-size:12px;color:var(--cream);opacity:0.6;margin-bottom:6px">Clubs and Tournaments:</div>';
+  h+='<div style="font-size:12px;color:#5a4a30;font-weight:600;margin-bottom:6px">Clubs and Tournaments:</div>';
   h+='<select class="fsel" onchange="setVenueFilter(this.value)">'+venueOpts+'</select>';
   var sysOpts='<option value="">Any System</option>'+SYSTEMS.filter(function(s){return s!=="Any";}).map(function(s){return '<option value="'+s+'"'+(browseFilters.system===s?" selected":"")+'>'+s+'</option>';}).join("");
-  h+='</div><div style="margin-bottom:10px"><div style="font-size:12px;color:var(--cream);opacity:0.6;margin-bottom:6px">Bidding System:</div><select class="fsel" onchange="browseFilters.system=this.value;renderBrowse()">'+sysOpts+'</select>';
+  h+='</div><div style="margin-bottom:10px"><div style="font-size:12px;color:#5a4a30;font-weight:600;margin-bottom:6px">Bidding System:</div><select class="fsel" onchange="browseFilters.system=this.value;renderBrowse()">'+sysOpts+'</select>';
   if(browseFilters.venue&&browseFilters.date){
     var availSess=[];
     if(TOURNAMENTS.hasOwnProperty(browseFilters.venue)){
@@ -1506,6 +1507,7 @@ function renderBrowse(){
   h+='<span style="color:var(--gold);font-size:13px;font-style:italic">'+others.length+' found</span>';
   h+='</div>';
   // Sort by match score
+  h+='</div>';
   others.sort(function(a,b){return matchScore(b)-matchScore(a);});
 
   var hasFilter=browseFilters.skills.length||browseFilters.anySkill||browseFilters.venue||browseFilters.date||browseFilters.system||browseFilters.role;
@@ -1655,9 +1657,8 @@ function renderMessages(){
     h+='</div>';
   }
   h+='<div class="thread-list">';
-  if(!tList.length)h+='<div style="padding:16px 14px;color:var(--cream);opacity:0.35;font-size:13px;font-style:italic">No conversations yet.</div>';
-  else tList.forEach(function(t){h+='<div class="thread-item'+(activeThread===t.uid?" active":"")+(t.unread>0?" thread-unread":"")+'" onclick="pickThread(\''+t.uid+'\')">'+'<div class="thread-name">'+t.player.displayName+'</div>'+'<div class="thread-preview">'+(t.last.text||"")+'</div></div>';});
-  h+='</div>';
+  if(!tList.length)h+='<div style="padding:16px 14px;color:#5a4a30;font-size:13px;font-style:italic">No conversations yet.</div>';
+  else tList.forEach(function(t){h+='<div class="thread-item"'+(activeThread===t.uid?' active':'')+(t.unread>0?' thread-unread':'')+' onclick="pickThread(\''+t.uid+'\')">'+'<div class="thread-name">'+t.name+'</div>'+'<div class="thread-preview">'+(t.unread>0?'<strong>':'')+(t.last.text||'').slice(0,40)+(t.unread>0?'</strong>':'')+'</div></div>';});
   if(!activeThread){
     h+='<div style="text-align:center;color:var(--cream);opacity:0.3;font-style:italic;padding:16px 0">Select a conversation or tap New</div>';
   } else {
